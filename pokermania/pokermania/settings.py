@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'poker_tournament',
+    'poker',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -56,7 +56,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
-AUTH_USER_MODEL = 'poker_tournament.User'
+AUTH_USER_MODEL = 'poker.User'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -87,7 +87,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'poker.wsgi.application'
+WSGI_APPLICATION = 'pokermania.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',

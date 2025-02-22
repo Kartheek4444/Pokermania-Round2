@@ -22,7 +22,7 @@ class User(AbstractUser):
 
 class Bot(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('poker_tournament.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('poker.User', on_delete=models.CASCADE)
     name = models.TextField()
     file = models.FileField(upload_to='static/bots/',max_length=5000)
     path = models.TextField(default="")
@@ -78,7 +78,7 @@ class Round(models.Model):
 
 
 class TestBot(models.Model):
-    user = models.ForeignKey('poker_tournament.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('poker.User', on_delete=models.CASCADE)
     name = models.TextField()
     file = models.FileField(upload_to='test_bots/')  # Changed upload_to for better organization
     created_at = models.DateTimeField(auto_now_add=True)
