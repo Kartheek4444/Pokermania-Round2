@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Table - 6 Players</title>
+  <link rel="stylesheet" href="pokercss.css" />
+  <style>
+    /* Base Styles */
+    body {
+      margin: 0;
+      background-image: url('images/table1.jpg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    .game-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Table container set to a circular table */
+    .game-table {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      border: 2px solid #ffd700;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    /* Opponent styling */
+    .opponent {
+      position: absolute;
+      text-align: center;
+    }
+    .balance {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ffd700;
+      margin-bottom: 0.25rem;
+    }
+    /* Cards container to position bet slot relative to player cards */
+    .cards-container {
+      position: relative;
+      display: inline-block;
+    }
+    .player-cards {
+      display: flex;
+      gap: 0.1rem;
+      justify-content: center;
+    }
+    .card-slot {
+      width: 55px;
+      height: 77px;
+      background-color: #1caa03;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: white;
+      position: relative;
+    }
+    .card-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* Bet slot styling relative to player cards */
+    .cards-container .bet {
+      position: absolute;
+      bottom: -25px; /* Adjust this value as needed */
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ffd700;
+      background-color: #1f2937;
+      border: 1px solid #ffd700;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+    }
+    /* Center area for community cards, deck, pot and Next button */
+    .center-area {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .card-pack {
+      width: 55px;
+      height: 77px;
+      background-image: url('images/cards/card_back.jpg');
+      background-size: cover;
+      background-position: center;
+      border: 2px solid white;
+      margin: 0 auto;
+      margin-top: 10px;
+    }
+    /* Community cards container with relative positioning */
+    .community-cards-container {
+      position: relative;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+    .community-cards {
+      display: flex;
+      gap: 0.1rem; /* Reduced gap between individual community cards */
+      justify-content: center;
+    }
+    /* Next button is positioned inside the community container */
+    .next-button {
+        position: relative;
+        top: -4.5rem;
+        transform: translate(80%,40%);
+        display: inline-block;
+    }
+
+    .next-button button {
+        background-color: #ffd700;
+        color: #1f2937;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .pot {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+    /* Opponent positions */
+    #player1 {
+      top: 5%;
+      left: 50%;
+      transform: translate(-50%, 0);
+    }
+    #player2 {
+      top: 20%;
+      right: 5%;
+      transform: translate(0, -50%);
+    }
+    #player3 {
+      bottom: 20%;
+      right: 5%;
+      transform: translate(0, 50%);
+    }
+    #player4 {
+      bottom: 5%;
+      left: 50%;
+      transform: translate(-50%, 0);
+    }
+    #player5 {
+      bottom: 20%;
+      left: 5%;
+      transform: translate(0, 50%);
+    }
+    #player6 {
+      top: 20%;
+      left: 5%;
+      transform: translate(0, -50%);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation bar -->
+  <div id="navbar-container"></div>
+  <script>
+    fetch('nav.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('navbar-container').innerHTML = html;
+      });
+  </script>
+  <div class="game-container">
+    <div class="game-table">
+      <!-- Player 1 (Top Center) -->
+      <div class="opponent" id="player1">
+        <h2>Player 1</h2>
+        <div class="balance">$500</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player1-card1"></div>
+            <div class="card-slot" id="player1-card2"></div>
+          </div>
+          <div class="bet">$50</div>
+        </div>
+      </div>
+      <!-- Player 2 (Top Right) -->
+      <div class="opponent" id="player2">
+        <h2>Player 2</h2>
+        <div class="balance">$450</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player2-card1"></div>
+            <div class="card-slot" id="player2-card2"></div>
+          </div>
+          <div class="bet">$70</div>
+        </div>
+      </div>
+      <!-- Player 3 (Bottom Right) -->
+      <div class="opponent" id="player3">
+        <h2>Player 3</h2>
+        <div class="balance">$400</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player3-card1"></div>
+            <div class="card-slot" id="player3-card2"></div>
+          </div>
+          <div class="bet">$40</div>
+        </div>
+      </div>
+      <!-- Player 4 (Bottom Center) -->
+      <div class="opponent" id="player4">
+        <h2>Player 4</h2>
+        <div class="balance">$550</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player4-card1"></div>
+            <div class="card-slot" id="player4-card2"></div>
+          </div>
+          <div class="bet">$60</div>
+        </div>
+      </div>
+      <!-- Player 5 (Bottom Left) -->
+      <div class="opponent" id="player5">
+        <h2>Player 5</h2>
+        <div class="balance">$480</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player5-card1"></div>
+            <div class="card-slot" id="player5-card2"></div>
+          </div>
+          <div class="bet">$80</div>
+        </div>
+      </div>
+      <!-- Player 6 (Top Left) -->
+      <div class="opponent" id="player6">
+        <h2>Player 6</h2>
+        <div class="balance">$530</div>
+        <div class="cards-container">
+          <div class="player-cards">
+            <div class="card-slot" id="player6-card1"></div>
+            <div class="card-slot" id="player6-card2"></div>
+          </div>
+          <div class="bet">$55</div>
+        </div>
+      </div>
+      <!-- Center area for community cards, deck, pot and Next button -->
+      <div class="center-area">
+        <div class="card-pack"></div>
+        <div class="community-cards-container">
+          <div class="community-cards">
+            <div class="card-slot" id="community-card-1"></div>
+            <div class="card-slot" id="community-card-2"></div>
+            <div class="card-slot" id="community-card-3"></div>
+            <div class="card-slot" id="community-card-4"></div>
+            <div class="card-slot" id="community-card-5"></div>
+          </div>
+          <div class="next-button">
+            <button onclick="nextStep()">Next</button>
+          </div>
+        </div>
+        <div class="pot">Pot: $200</div>
+      </div>
+    </div>
+  </div>
+  <script src="multigame.js"></script>
+</body>
+</html>

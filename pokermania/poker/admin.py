@@ -15,8 +15,12 @@ class BotAdmin(admin.ModelAdmin):
     
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    list_display = ('bot1', 'bot2', 'winner')
-    search_fields = ('bot1', 'bot2', 'winner')
+    list_display = ('id', 'players_display', 'winner', 'played_at')
+    search_fields = ('players__name', 'winner')
+
+    def players_display(self, obj):
+        return ", ".join([bot.name for bot in obj.players.all()])
+    players_display.short_description = "Players"
 
 @admin.register(TestMatch)
 class TestMatchAdmin(admin.ModelAdmin):

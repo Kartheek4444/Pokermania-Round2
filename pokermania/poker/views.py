@@ -108,63 +108,28 @@ def upload_bot(request):
     bot_name = request.POST.get('bot_name')
     bot_file_path = request.POST.get('bot_file_path')
 
-    if Bot.objects.filter(user=user).count() > 5:
-        return render(request, 'deploy.html', {'message': "You can only upload a maximum of 5 bots."})
+    if Bot.objects.filter(user=user).count()>1:
+        messages.error(request, "You can only upload 1 bot.")
+        return redirect('deploy_bot') 
 
     try:
         with open(bot_file_path, 'r') as file:
             bot_file = file.read()
 
     except FileNotFoundError:
-        return render(request, 'deploy.html', {'message': f"The file at {bot_file_path} was not found."})
+        messages.error(request, f"The file at {bot_file_path} was not found.")
+        return redirect('deploy_bot')
 
     try:
-        new_bot = Bot.objects.create(user=user, name=bot_name, file=bot_file, path=bot_file_path)
+        Bot.objects.create(user=user, name=bot_name, file=bot_file, path=bot_file_path)
+        messages.success(request, f"Bot '{bot_name}' uploaded successfully!")
+    
     except Exception as e:
-
         traceback.print_exc()
-        raise
-    existing_bots = Bot.objects.exclude(id=new_bot.id)
+        messages.error(request, "An error occurred while uploading the bot.")
+        return redirect('deploy_bot')
 
-    for existing_bot in existing_bots:
-        winner, chips_exchanged, rounds_data, win_counts = play_match(
-            bot_file_path, existing_bot.path, new_bot, existing_bot
-        )
-
-        if winner is not None:
-            Match.objects.create(
-                bot1=new_bot,
-                bot2=existing_bot,
-                winner=winner,
-                total_chips_exchanged=chips_exchanged,
-                rounds_data=rounds_data,
-                bot1_wins=win_counts[0],
-                bot2_wins=win_counts[1]
-            )
-
-    return redirect('/my_bots/')
-
-
-def leaderboard(request):
-    bots = Bot.objects.all().order_by('-score')  # Only regular bots are considered
-    data = []
-
-    for idx, bot in enumerate(bots, start=1):
-        earnings = f"${bot.chips_won:,.0f}"
-        win_rate = (bot.wins / bot.total_games * 100) if bot.total_games > 0 else 0
-
-        data.append({
-            'rank': idx,
-            'botName': bot.name,
-            'owner': bot.user.username,
-            'wins': bot.wins,
-            'total_games': bot.total_games,
-            'win_rate': f"{win_rate:.1f}%",
-            'earnings': earnings,
-            'score': bot.score
-        })
-
-    return render(request, 'leaderboard.html', {'data': data})
+    return redirect('')
 
 
 @login_required
@@ -206,18 +171,14 @@ def my_bots(request):
         'selected_bot': selected_bot,
     })
 
-
+@login_required
 def replay(request, match_id):
-    match = Match.objects.get(id=match_id)
-    if match.bot1.user != request.user and match.bot2.user != request.user:
-        return redirect('/my_bots/')
-
-    player = "L" if match.bot1.user == request.user else "R"
-
-
+    match = get_object_or_404(Match,id=match_id)
+    if not request.user.is_staff and not request.user.is_superuser:
+        return redirect('')
+    
     return render(request, 'game.html', {
         'match': match,
-        'player': player,
         'rounds_data': match.rounds_data
     })
 
@@ -338,3 +299,18 @@ def test_match_results(request, bot_id):
     }
     return render(request, 'test_run_Response2.html', context)
 
+@login_required
+def admin_panel(request):
+    if not request.user.is_staff and not request.user.is_superuser:
+        return redirect('')
+
+    # Fetch all test bots
+    test_bots = TestBot.objects.all()
+
+    # Fetch all test matches
+    test_matches = TestMatch.objects.all()
+
+    return render(request, 'admin_panel.html', {
+        'test_bots': test_bots,
+        'test_matches': test_matches,
+    })

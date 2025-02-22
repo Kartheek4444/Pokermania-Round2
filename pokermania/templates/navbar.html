@@ -37,21 +37,16 @@
                     </svg>
                     Home
                 </a>
-                <a href="{% url 'leaderboard' %}" class="nav-link">
-                    <svg viewBox="0 0 24 24" class="icon">
-                        <path
-                            d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z" />
-                    </svg>
-                    Leaderboard
-                </a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'my_bots' %}" class="nav-link">
-                        <svg viewBox="0 0 24 24" class="icon">
-                            <path
-                                d="M8 2h8c1.1 0 1.99.9 1.99 2L18 18c0 1.1-.89 2-1.99 2H7c-1.1 0-1.99-.9-1.99-2L6 4c0-1.1.89-2 1.99-2zm1 2v4h2V4H9zm4 0v4h2V4h-2zm-4 6h8v8H9zm-1 9h10v1H8v-1z" />
-                        </svg>
-                        MyBots
-                    </a>
+                {% if not user.is_superuser and not user.is_staff %}
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'my_bots' %}" class="nav-link">
+                            <svg viewBox="0 0 24 24" class="icon">
+                                <path
+                                    d="M8 2h8c1.1 0 1.99.9 1.99 2L18 18c0 1.1-.89 2-1.99 2H7c-1.1 0-1.99-.9-1.99-2L6 4c0-1.1.89-2 1.99-2zm1 2v4h2V4H9zm4 0v4h2V4h-2zm-4 6h8v8H9zm-1 9h10v1H8v-1z" />
+                            </svg>
+                            MyBots
+                        </a>
+                    {% endif %}
                     <a href="{% url 'documentation' %}" class="nav-link">
                         <svg viewBox="0 0 24 24" class="icon">
                             <path
@@ -66,6 +61,8 @@
                         </svg>
                         Contact
                     </a>
+                {% endif %}
+                {% if user.is_authenticated %}
                     <a href="{% url 'logout' %}" class="nav-link">
                         <svg viewBox="0 0 24 24" class="icon">
                             <path
@@ -74,20 +71,6 @@
                         Logout
                     </a>
                 {% else %}
-                    <a href="{% url 'documentation' %}" class="nav-link">
-                        <svg viewBox="0 0 24 24" class="icon">
-                            <path
-                                d="M12 2C9.79 2 8 3.79 8 6v12c0 2.21 1.79 4 4 4s4-1.79 4-4V6c0-2.21-1.79-4-4-4zm-1 2h2v4h-2V4zm0 6h2v4h-2v-4z" />
-                        </svg>
-                        How to Play
-                    </a>
-                    <a href="{% url 'contact_us' %}" class="nav-link">
-                        <svg viewBox="0 0 24 24" class="icon">
-                            <path
-                                d="M21 8V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1l9 5 9-5zm-9 7-9-5v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6l-9 5z" />
-                        </svg>
-                        Contact
-                    </a>
                     <a href="{% url 'login' %}" class="nav-link">
                         <svg viewBox="0 0 24 24" class="icon">
                             <path

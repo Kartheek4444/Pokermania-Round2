@@ -30,26 +30,17 @@ class Bot(models.Model):
     wins = models.IntegerField(default=0)
     total_games = models.IntegerField(default=0)
     chips_won = models.IntegerField(default=0)
-    score = models.FloatField(default=0)  # Changed to FloatField for more precise scoring
-
-    def get_win_rate(self):
-        if self.total_games == 0:
-            return 0
-        return (self.wins / self.total_games) * 100
 
     def __str__(self):
         return f"{self.name} (by {self.user.username})"
 
 
 class Match(models.Model):
-    id = models.AutoField(primary_key=True)  # Changed from game_id to id for consistency
-    bot1 = models.ForeignKey(Bot, related_name='matches_as_bot1', on_delete=models.CASCADE)
-    bot2 = models.ForeignKey(Bot, related_name='matches_as_bot2', on_delete=models.CASCADE)
+    id = models.AutoField(primary_key=True)
+    players = models.ManyToManyField(Bot, related_name="matches")  # Multiple bots per match
     winner = models.TextField()
-    total_chips_exchanged = models.IntegerField(default=0)  # Renamed from chips_exchanged
-    bot1_wins = models.IntegerField(default=0)  # New field to track rounds won by bot1
-    bot2_wins = models.IntegerField(default=0)  # New field to track rounds won by bot2
-    total_rounds = models.IntegerField(default=5)  # New field to store total rounds played
+    total_chips_exchanged = models.IntegerField(default=0)
+    total_rounds = models.IntegerField(default=50)
     played_at = models.DateTimeField(auto_now_add=True)
     rounds_data = models.JSONField(max_length=100000)  # New field to store data for all rounds
 
@@ -85,7 +76,6 @@ class TestBot(models.Model):
     chips_won = models.IntegerField(default=0)
     wins = models.IntegerField(default=0)
     total_games = models.IntegerField(default=0)
-    score = models.FloatField(default=0)
 
     class Meta:
         ordering = ['-created_at']

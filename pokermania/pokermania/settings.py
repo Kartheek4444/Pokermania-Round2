@@ -69,7 +69,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'poker.urls'
+ROOT_URLCONF = 'pokermania.urls'
 
 TEMPLATES = [
     {
