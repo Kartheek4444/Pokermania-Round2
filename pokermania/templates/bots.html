@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}User Bots - PokerBots Arena{% endblock %}
+
+{% load static %}
+
+{% block content %}
+    <div class="video-container">
+        <video autoplay muted loop playsinline id="bg-video">
+            <source src="https://img.pikbest.com/09/42/51/38DpIkbEsTq9v.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+    </div>
+
+    <div id="user-bots-page" class="page">
+        <div class="container">
+            <div class="header">
+                <h1>My Bots</h1>
+                <p>Your bots and their performance in the arena</p>
+            </div>
+
+            <div class="leaderboard-container">
+                <form method="get" action="{% url 'my_bots' %}">
+                    <div class="bot-filters">
+                        <select name="bot" id="botFilter" onchange="this.form.submit()">
+                            <option value="all" {% if selected_bot == 'all' %}selected{% endif %}>All Bots</option>
+                            {% for bot in bots %}
+                                <option value="{{ bot.name }}" {% if selected_bot == bot.name %}selected{% endif %}>{{ bot.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Replay ID</th>
+                            <th>Bot Name</th>
+                            <th>Opponent</th>
+                            <th>Date</th>
+                            <th>Winner</th>
+                            <th>Earnings</th>
+                            <th>Replay</th>
+                        </tr>
+                    </thead>
+                    <tbody id="replaysBody">
+                        {% for bot,matches in bot_matches.items %}
+                            {% for match in matches %}
+                                <tr>
+                                    <td>{{ forloop.parentloop.counter }}-{{ forloop.counter }}</td>
+                                    <td>{{ bot }}</td>
+                                    <td>{{ match.opponent }}</td>
+                                    <td>{{ match.date }}</td>
+                                    <td>{{ match.result }}</td>
+                                    {% if bot == match.result %}
+                                        <td class="win">+{{ match.chips_exchanged }}</td>
+                                    {% elif match.result == 'No One' %}
+                                        <td class="draw">0</td>
+                                    {% else %}
+                                        <td class="loss">-{{ match.chips_exchanged }}</td>
+                                    {% endif %}
+                                    <td>
+                                        <a href="{% url 'replay' match.id %}" class="replay-btn">Replay</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+Leaderboard - PokerBots Arena
+{% endblock %}
+
+{% block extra_css %}
+    <style>
+        body {
+            background-image: url('{% static "images/pokerbg1.jpg" %}');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+
+    <div id="leaderboard-page" class="page">
+        <div class="container">
+            <div class="header">
+                <h1>Leaderboard</h1>
+                <p>Top performing poker bots in the arena</p>
+            </div>
+
+            <div class="leaderboard-container">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Bot Name</th>
+                            <th>Owner</th>
+                            <th>Wins</th>
+                            <th>Total Earnings</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        {% for entry in data %}
+                        <tr>
+                            <td>{{ entry.rank }}</td>
+                            <td>{{ entry.botName }}</td>
+                            <td>{{ entry.owner }}</td>
+                            <td>{{ entry.wins }}</td>
+                            <td>{{ entry.earnings }}</td>
+                            <td>{{ entry.score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,166 @@
+.navbar {
+    background-color: #111827;
+    border-bottom: 1px solid #991b1b;
+    padding: 1rem 0;
+    position: relative;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.logo {
+    color: #ef4444;
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    z-index: 20;
+    margin-left: 0;
+    white-space: nowrap;
+}
+
+.suit-container {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.suit {
+    width: 24px;
+    height: 24px;
+}
+
+.suit.spades, .suit.clubs {
+    fill: white;
+}
+
+.suit.hearts, .suit.diamonds {
+    fill: #ef4444;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: #ef4444;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* Hide checkbox */
+.nav-toggle {
+    display: none;
+}
+
+/* Style toggle button */
+.nav-toggle-label {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    cursor: pointer;
+    padding: 0;
+    z-index: 20;
+    position: absolute;
+    right: 0.5rem;
+    top: 1.5rem;
+}
+
+.nav-toggle-label span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+@media (max-width: 1120px) {
+    .nav-toggle-label {
+        display: flex;
+        position: absolute;
+        right: 1rem;
+        top: 1.25rem; /* Align vertically */
+    }
+
+    .logo {
+        font-size: 1.2rem; /* Reduce font size for small screens */
+        margin-right: auto; /* Push toggle button to the far right */
+    }
+
+    .nav-buttons {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #111827;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        z-index: 10;
+    }
+
+    /* Show menu when checkbox is checked */
+    .nav-toggle:checked ~ .nav-buttons {
+        display: flex;
+    }
+
+    /* Animate hamburger to X when checked */
+    .nav-toggle:checked ~ .nav-toggle-label span:first-child {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .nav-toggle:checked ~ .nav-toggle-label span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .nav-toggle:checked ~ .nav-toggle-label span:last-child {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+}
+
+@media (max-width: 500px) {
+    .logo {
+        font-size: 1rem; /* Further reduce font size */
+        padding-left: 0.5rem;
+    }
+
+    .nav-toggle-label {
+        right: 0.5rem; /* Add more spacing between the logo and toggle */
+        top: 1rem;
+    }
+
+    .navbar .container {
+        padding: 0 0.5rem; /* Reduce padding for narrow screens */
+    }
+}

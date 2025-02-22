@@ -1,0 +1,633 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+Game Table
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/gamestyles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="round-navigation">
+
+        <span id="current-round">Round 1</span>
+
+    </div>
+    <div class="game-table">
+        {% if player == "L" %}
+            <div class="opponent">
+                <h2>{{ match.bot1.name }}(You)</h2>
+                <div class="balance" id="player1-balance">$9500</div>
+                <div class="player-cards">
+                    <div class="card-slot" id="player1-card-1"></div>
+                    <div class="card-slot" id="player1-card-2"></div>
+                    <div class="bet bet-left" id="bet-left">$500</div>
+                </div>
+                <div class="actions" id="player1-actions"></div>
+
+            </div>
+        {% else %}
+            <div class="opponent">
+                <h2>{{ match.bot2.name }}(You)</h2>
+                <div class="balance" id="player2-balance">$9750</div>
+                <div class="player-cards">
+                    <div class="card-slot" id="player2-card-1"></div>
+                    <div class="card-slot" id="player2-card-2"></div>
+                    <div class="bet bet-left" id="bet-left">$250</div>
+                </div>
+                <div class="actions" id="player2-actions"></div>
+
+            </div>
+        {% endif %}
+
+
+
+        <div class="center-area">
+            <div class="card-pack"></div>
+            <div class="community-cards">
+                <div class="card-slot" id="community-card-1"></div>
+                <div class="card-slot" id="community-card-2"></div>
+                <div class="card-slot" id="community-card-3"></div>
+                <div class="card-slot" id="community-card-4"></div>
+                <div class="card-slot" id="community-card-5"></div>
+            </div>
+            <div class="pot" id="pot">Pot: $0</div>
+            <div class="next-button">
+                <button onclick="nextStep()">Next</button>
+            </div>
+        </div>
+
+        {% if player == "R" %}
+            <div class="opponent">
+                <h2>{{ match.bot1.name }}</h2>
+                <div class="balance" id="player1-balance">$9500</div>
+                <div class="player-cards">
+                    <div class="card-slot" id="player1-card-1"></div>
+                    <div class="card-slot" id="player1-card-2"></div>
+                    <div class="bet bet-right" id="bet-right">$500</div>
+                </div>
+                <div class="actions" id="player1-actions"></div>
+            </div>
+
+        {% else %}
+            <div class="opponent">
+                <h2>{{ match.bot2.name }}</h2>
+                <div class="balance" id="player2-balance">$9750</div>
+                <div class="player-cards">
+                    <div class="card-slot" id="player2-card-1"></div>
+                    <div class="card-slot" id="player2-card-2"></div>
+                    <div class="bet bet-right" id="bet-right">$250</div>
+                </div>
+                <div class="actions" id="player2-actions"></div>
+            </div>
+
+        {% endif %}
+
+    </div>
+</div>
+<script>
+    function resetUI() {
+        document.getElementById('pot').textContent = 'Pot: $0';
+        document.getElementById('bet-left').textContent = '$0';
+        document.getElementById('bet-right').textContent = '$0';
+        document.getElementById('player1-actions').classList.add('hidden');
+        document.getElementById('player2-actions').classList.add('hidden');
+        document.getElementById('community-card-1').innerHTML = '';
+        document.getElementById('community-card-2').innerHTML = '';
+        document.getElementById('community-card-3').innerHTML = '';
+        document.getElementById('community-card-4').innerHTML = '';
+        document.getElementById('community-card-5').innerHTML = '';
+        document.getElementById('player1-card-1').innerHTML = '';
+        document.getElementById('player1-card-2').innerHTML = '';
+        document.getElementById('player2-card-1').innerHTML = '';
+        document.getElementById('player2-card-2').innerHTML = '';
+    }
+    const roundsData = {{ rounds_data|safe }}; // Pass rounds_data to JS
+    const player = "{{ player|safe }}";
+    // console.log(roundsData);
+    let currentRoundIndex = 0;
+    let player1Balance = 10000; // Initial balance for player 1
+    let player2Balance = 10000; // Initial balance for player 2
+    let player1Name="{{ match.bot1.name|safe }}";
+    let player2Name="{{ match.bot2.name|safe }}";
+    function updateBalancesForRound(roundIndex,chips) {
+        // Reset balances to the starting value at the start of the first round
+        if (roundIndex === 0) {
+            if(player==="L"){
+                player1Balance = 9500; // Initial balance for player 1
+                player2Balance = 9750; // Initial balance for player 2
+            }
+            else{
+                player1Balance = 9750;
+                player2Balance = 9500;
+            }
+        }
+        
+        else {
+            // console.log(player2Balance);
+            const round = roundsData[roundIndex - 1];
+            if(roundIndex&1){
+                if(player==="R"){
+                    player1Balance -= 500;
+                    player2Balance -= 250;
+                }
+                else{
+                    player1Balance -= 250;
+                    player2Balance -= 500;
+                }
+            }
+            else{
+                if(player==="L"){
+                    player1Balance -= 500;
+                    player2Balance -= 250;
+                }
+                else{
+                    player1Balance -= 250;
+                    player2Balance -= 500;
+                }
+            }
+
+            const winner = round.winner;
+
+            // Adjust balances based on the winner
+            if (winner === player1Name) {
+                player1Balance += chips;
+
+            } else if (winner === player2Name) {
+                player2Balance += chips;
+
+            }
+        }
+    }
+    const cards = [
+        { name: "SA", image: "{% static 'images/cards/ace_of_spades.png' %}" },
+        { name: "SK", image: "{% static 'images/cards/king_of_spades.png' %}" },
+        { name: "SQ", image: "{% static 'images/cards/queen_of_spades.png' %}" },
+        { name: "SJ", image: "{% static 'images/cards/jack_of_spades.png' %}" },
+        { name: "ST", image: "{% static 'images/cards/10_of_spades.png' %}" },
+        { name: "S9", image: "{% static 'images/cards/9_of_spades.png' %}" },
+        { name: "S8", image: "{% static 'images/cards/8_of_spades.png' %}" },
+        { name: "S7", image: "{% static 'images/cards/7_of_spades.png' %}" },
+        { name: "S6", image: "{% static 'images/cards/6_of_spades.png' %}" },
+        { name: "S5", image: "{% static 'images/cards/5_of_spades.png' %}" },
+        { name: "S4", image: "{% static 'images/cards/4_of_spades.png' %}" },
+        { name: "S3", image: "{% static 'images/cards/3_of_spades.png' %}" },
+        { name: "S2", image: "{% static 'images/cards/2_of_spades.png' %}" },
+        { name: "HA", image: "{% static 'images/cards/ace_of_hearts.png' %}" },
+        { name: "HK", image: "{% static 'images/cards/king_of_hearts.png' %}" },
+        { name: "HQ", image: "{% static 'images/cards/queen_of_hearts.png' %}" },
+        { name: "HJ", image: "{% static 'images/cards/jack_of_hearts.png' %}" },
+        { name: "HT", image: "{% static 'images/cards/10_of_hearts.png' %}" },
+        { name: "H9", image: "{% static 'images/cards/9_of_hearts.png' %}" },
+        { name: "H8", image: "{% static 'images/cards/8_of_hearts.png' %}" },
+        { name: "H7", image: "{% static 'images/cards/7_of_hearts.png' %}" },
+        { name: "H6", image: "{% static 'images/cards/6_of_hearts.png' %}" },
+        { name: "H5", image: "{% static 'images/cards/5_of_hearts.png' %}" },
+        { name: "H4", image: "{% static 'images/cards/4_of_hearts.png' %}" },
+        { name: "H3", image: "{% static 'images/cards/3_of_hearts.png' %}" },
+        { name: "H2", image: "{% static 'images/cards/2_of_hearts.png' %}" },
+        { name: "DA", image: "{% static 'images/cards/ace_of_diamonds.png' %}" },
+        { name: "DK", image: "{% static 'images/cards/king_of_diamonds.png' %}" },
+        { name: "DQ", image: "{% static 'images/cards/queen_of_diamonds.png' %}" },
+        { name: "DJ", image: "{% static 'images/cards/jack_of_diamonds.png' %}" },
+        { name: "DT", image: "{% static 'images/cards/10_of_diamonds.png' %}" },
+        { name: "D9", image: "{% static 'images/cards/9_of_diamonds.png' %}" },
+        { name: "D8", image: "{% static 'images/cards/8_of_diamonds.png' %}" },
+        { name: "D7", image: "{% static 'images/cards/7_of_diamonds.png' %}" },
+        { name: "D6", image: "{% static 'images/cards/6_of_diamonds.png' %}" },
+        { name: "D5", image: "{% static 'images/cards/5_of_diamonds.png' %}" },
+        { name: "D4", image: "{% static 'images/cards/4_of_diamonds.png' %}" },
+        { name: "D3", image: "{% static 'images/cards/3_of_diamonds.png' %}" },
+        { name: "D2", image: "{% static 'images/cards/2_of_diamonds.png' %}" },
+        { name: "CA", image: "{% static 'images/cards/ace_of_clubs.png' %}" },
+        { name: "CK", image: "{% static 'images/cards/king_of_clubs.png' %}" },
+        { name: "CQ", image: "{% static 'images/cards/queen_of_clubs.png' %}" },
+        { name: "CJ", image: "{% static 'images/cards/jack_of_clubs.png' %}" },
+        { name: "CT", image: "{% static 'images/cards/10_of_clubs.png' %}" },
+        { name: "C9", image: "{% static 'images/cards/9_of_clubs.png' %}" },
+        { name: "C8", image: "{% static 'images/cards/8_of_clubs.png' %}" },
+        { name: "C7", image: "{% static 'images/cards/7_of_clubs.png' %}" },
+        { name: "C6", image: "{% static 'images/cards/6_of_clubs.png' %}" },
+        { name: "C5", image: "{% static 'images/cards/5_of_clubs.png' %}" },
+        { name: "C4", image: "{% static 'images/cards/4_of_clubs.png' %}" },
+        { name: "C3", image: "{% static 'images/cards/3_of_clubs.png' %}" },
+        { name: "C2", image: "{% static 'images/cards/2_of_clubs.png' %}" },
+    ];
+    function getCardImage(cardName) {
+        const card = cards.find(c => c.name === cardName);
+        return card ? card.image : "{% static 'images/cards/card_back.jpg' %}";
+    }
+
+    function setCardImage(cardSlotId, cardImageSrc) {
+        const cardSlot = document.getElementById(cardSlotId);
+        if (cardSlot) {
+            const cardImage = document.createElement('img');
+            cardImage.src = cardImageSrc;
+            cardImage.alt = cardSlotId;
+            cardImage.style.width = "100%";
+            cardImage.style.height = "100%";
+            cardSlot.innerHTML = '';
+            cardSlot.appendChild(cardImage);
+        }
+    }
+
+    function closeResults() {
+
+        const overlay = document.getElementById('overlay');
+        const resultsDiv = document.getElementById('resultsDiv');
+
+        if (overlay) overlay.remove();
+        if (resultsDiv) resultsDiv.remove();
+
+            // Check if it's the last round
+        if (currentRoundIndex < roundsData.length - 1) {
+            nextRound()
+        } else {
+            // If it's the last round, redirect to the "my_bots" page
+            window.location.href = '{% url "my_bots" %}';
+        }
+    }
+
+    function dimPage() {
+        const existingOverlay = document.getElementById('overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.zIndex = '9999';
+        overlay.id = 'overlay';
+        document.body.appendChild(overlay);
+    }
+
+    let player1Bet = 0;
+    let player2Bet = 0;
+    let pot = 0;
+    
+    function updateUI(){
+        resetUI();
+        const round=roundsData[currentRoundIndex];
+        // console.log(round)
+        document.getElementById('current-round').textContent = `Round ${currentRoundIndex+1}`;
+        const holecards = round.hole_cards;
+        const communitycards = round.communitycards;
+        const actions = round.actions;
+        const player = "{{ player|safe }}";
+        // console.log(holecards);
+        // console.log(communitycards);
+        // console.log(actions);
+        // console.log(player);
+
+
+
+        function setPlayerCards() {
+            if(player === 'L'){
+                setCardImage("player1-card-1", getCardImage(holecards[0][0]));
+                setCardImage("player1-card-2", getCardImage(holecards[0][1]));
+                setCardImage("player2-card-1", getCardImage());
+                setCardImage("player2-card-2", getCardImage());
+            }
+            else{
+                setCardImage("player1-card-1", getCardImage());
+                setCardImage("player1-card-2", getCardImage());
+                setCardImage("player2-card-1", getCardImage(holecards[1][0]));
+                setCardImage("player2-card-2", getCardImage(holecards[1][1]));
+            }
+        }
+        setPlayerCards();
+
+        let currentStreet = 0; // 0 = preflop, 1 = flop, 2 = turn, 3 = river
+        let actionIndex = 0; // Action index for the current street
+
+        let isfold=false;
+
+        const potElement = document.getElementById("pot");
+        const betLeftElement = document.getElementById("bet-left");
+        const betRightElement = document.getElementById("bet-right");
+        const player1BalanceElement = document.getElementById("player1-balance");
+        const player2BalanceElement = document.getElementById("player2-balance");
+        const player1ActionsElement = document.getElementById("player1-actions");
+        const player2ActionsElement = document.getElementById("player2-actions");
+
+        updateBalancesForRound(currentRoundIndex,pot+player1Bet+player2Bet);
+        
+        pot=0;
+        
+        if(currentRoundIndex&1){
+            if(player==="R"){
+                player1Bet = 500;
+                player2Bet = 250;
+            }
+            else{
+                player1Bet = 250;
+                player2Bet = 500;
+            }
+        }
+        else{
+            if(player==="L"){
+                player1Bet = 500;
+                player2Bet = 250;
+            }
+            else{
+                player1Bet = 250;
+                player2Bet = 500;
+            }
+        }
+        let done = false;
+        player1ActionsElement.classList.add("hidden");
+        player2ActionsElement.classList.add("hidden");
+        betLeftElement.textContent = `$${player1Bet}`;
+        betRightElement.textContent = `$${player2Bet}`;
+        potElement.textContent = `Pot: $${pot}`;
+        document.getElementById('player1-balance').textContent = `$${player1Balance}`;
+        document.getElementById('player2-balance').textContent = `$${player2Balance}`;
+
+        window.nextStep = function nextStep(){
+            const streets = ["preflop", "flop", "turn", "river"];
+            const street = streets[currentStreet];
+            const streetActions = actions[street];
+
+            if (actionIndex === 0) {
+                player1ActionsElement.classList.add("hidden");
+                player2ActionsElement.classList.add("hidden");
+            }
+
+            if (actionIndex < streetActions.name.length) {
+                const playerName = streetActions.name[actionIndex];
+                const playerAction = streetActions.action[actionIndex];
+                const actionAmount = streetActions.amount[actionIndex];
+                const formattedAction = playerAction.charAt(0).toUpperCase() + playerAction.slice(1);
+
+                if(playerAction === "fold"){
+                    isfold=true;
+                    done=true;
+                    console.log(pot);
+                    console.log(player1Bet);
+                    console.log(player2Bet);
+                    if(playerName === player1Name){
+                        // if(actionIndex!=0) player2Balance-=player2Bet;
+                        player1ActionsElement.textContent = `${formattedAction}`;
+                        player1ActionsElement.classList.remove("hidden");
+                        player2ActionsElement.classList.add("hidden");
+                    }
+                    else{
+                        // if(actionIndex!=0) player1Balance-=player1Bet;
+                        player2ActionsElement.textContent = `${formattedAction}`;
+                        player2ActionsElement.classList.remove("hidden");
+                        player1ActionsElement.classList.add("hidden");
+                    }
+                }
+
+                if (playerName === player1Name && !isfold) {
+                    let betDifference = actionAmount - player1Bet;
+                    player1Bet = actionAmount;
+                    if(betDifference>player1Balance){
+                        betDifference=player1Balance;
+                        player1Bet = player1Balance;
+                    }
+                    player1Balance -= betDifference;
+                    betLeftElement.textContent = `$${player1Bet}`;
+                    player1BalanceElement.textContent = `$${player1Balance}`;
+                    player1ActionsElement.textContent = `${formattedAction}`;
+                    player1ActionsElement.classList.remove("hidden");
+                    player2ActionsElement.classList.add("hidden");
+
+                } else if (playerName === player2Name && !isfold) {
+                    let betDifference = actionAmount - player2Bet;
+                    player2Bet = actionAmount;
+                    if(betDifference>player2Balance){
+                        betDifference=player2Balance;
+                        player2Bet = player2Balance;
+                    }
+                    player2Balance -= betDifference;
+                    betRightElement.textContent = `$${player2Bet}`;
+                    player2BalanceElement.textContent = `$${player2Balance}`;
+                    betRightElement.textContent = `$${player2Bet}`;
+                    player2ActionsElement.textContent = `${formattedAction}`;
+                    player2BalanceElement.textContent = `$${player2Balance}`;
+                    player2ActionsElement.classList.remove("hidden");
+                    player1ActionsElement.classList.add("hidden");
+                }
+                actionIndex++;
+            }
+            else if(!done){
+                if (actionIndex === streetActions.name.length) {
+                    player1ActionsElement.classList.add("hidden");
+                    player2ActionsElement.classList.add("hidden");
+                    pot += player1Bet + player2Bet;
+                    potElement.textContent = `Pot: $${pot}`;
+
+                    player1Bet = 0;
+                    player2Bet = 0;
+                    betLeftElement.textContent = `$${player1Bet}`;
+                    betRightElement.textContent = `$${player2Bet}`;
+                    potElement.textContent = `Pot: $${pot}`;
+                    actionIndex = 0;
+
+                    if (currentStreet < streets.length - 1) {
+                        currentStreet++;
+                        if (currentStreet === 1) {
+                            setCardImage("community-card-1", getCardImage(communitycards[1][0]));
+                            setCardImage("community-card-2", getCardImage(communitycards[1][1]));
+                            setCardImage("community-card-3", getCardImage(communitycards[1][2]));
+                        } else if (currentStreet === 2) {
+                            setCardImage("community-card-4", getCardImage(communitycards[2][3]));
+                        } else if (currentStreet === 3) {
+                            setCardImage("community-card-5", getCardImage(communitycards[3][4]));
+                            done=true;
+                        }
+                    }
+                }
+            }
+            else{
+                if(isfold){
+                    dimPage();
+                    showResults(holecards, communitycards[currentStreet]);
+                }
+                dimPage();
+                showResults(holecards, communitycards[3]);
+            }
+        }
+
+
+
+
+
+
+        function showResults(holecards, communityCards) {
+            const existingResultsDiv = document.getElementById('resultsDiv');
+            if (existingResultsDiv) {
+                existingResultsDiv.remove();
+            }
+            const resultsDiv = document.createElement('div');
+            resultsDiv.id = 'resultsDiv';
+            resultsDiv.style.position = 'fixed';
+            resultsDiv.style.top = '50%';
+            resultsDiv.style.left = '50%';
+            resultsDiv.style.transform = 'translate(-50%, -50%)';
+            resultsDiv.style.backgroundColor = '#1f2937';
+            resultsDiv.style.color = 'white';
+            resultsDiv.style.padding = '20px';
+            resultsDiv.style.borderRadius = '10px';
+            resultsDiv.style.textAlign = 'center';
+            resultsDiv.style.fontSize = '1rem';
+            resultsDiv.style.zIndex = '10000';
+            resultsDiv.style.width = '80%';
+            resultsDiv.style.maxWidth = '800px';
+            resultsDiv.style.overflowY = 'auto';
+
+            let communityCardsHTML=null;
+
+            if(!isfold){
+                communityCardsHTML = communityCards.map(card =>
+                    `<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`
+                ).join('');
+            }
+
+            const player1CardsHTML = holecards[0].map(card =>
+                `<img src="${getCardImage(card)}" alt="${card}" style="width: 22%; margin: 1px;">`
+            ).join('');
+
+            const player2CardsHTML = holecards[1].map(card =>
+                `<img src="${getCardImage(card)}" alt="${card}" style="width: 22%; margin: 1px;">`
+            ).join('');
+
+            const chips_exchanged= round.chips_exchanged;
+            const total_chips_exchanged=round.total_chips_exchanged;
+            const winner = round.winner;
+
+            let resultsHTML = ``;
+            if(winner!="No one"){
+                resultsHTML += `
+                <h2>Round Complete!</h2>
+                <p>
+                    <strong style="color: #ffcc00;">${winner}</strong> wins <strong style="color: #00ff00;">${pot+player1Bet+player2Bet}</strong> from the pot!
+                </p>
+                <br><br/>
+                `;
+            }
+            else{
+                resultsHTML += `
+                <h2>Round Complete!</h2>
+                <p>
+                    <strong style="color: #ffcc00;">Draw</strong>
+                </p>
+                <br><br/>
+                `;
+            }
+            if (!isfold&&currentStreet!=0) {
+                resultsHTML += `
+                    <h3>Community Cards</h3>
+                    <div>${communityCardsHTML}</div>
+                    <br><br/>
+                `;
+            }
+
+            // Helper function to determine the chip text and color
+            const getChipsHTML = (playerName) => {
+
+                if(winner=="No one"){
+                    return `<span style="color: #00ff00;">${chips_exchanged}</span>`;
+                }
+                else if (playerName === winner) {
+                    // The winner gains the amount bet by the loser
+
+                    return `<span style="color: #00ff00;">+${chips_exchanged}</span>`;
+                } else {
+                    // The loser loses their bet amount
+
+                    return `<span style="color: #ff0000;">-${chips_exchanged}</span>`;
+                }
+            };
+            window.getChipsHTML=getChipsHTML;
+
+
+            resultsHTML += `
+                <h3>Results</h3>
+                <table style="width: 80%; margin-top: 20px; border-collapse: collapse; margin-left: auto; margin-right: auto;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 5px;">Player</th>
+                            <th style="padding: 5px; width: 30%;">Player Cards</th>
+                            <th style="padding: 5px;">Chips</th>
+                        </tr>
+                    </thead>
+
+            `;
+
+            if (player === 'L') {
+                resultsHTML += `
+                    <tbody>
+                        <tr>
+                            <td style="padding: 5px;">${player1Name}(You)</td>
+                            <td style="padding: 0px;">${player1CardsHTML}</td>
+                            <td style="padding: 5px;">${getChipsHTML(player1Name)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px;">${player2Name}</td>
+                            <td style="padding: 5px;">${player2CardsHTML}</td>
+                            <td style="padding: 5px;">${getChipsHTML(player2Name)}</td>
+                        </tr>
+                    </tbody>
+                `;
+            }
+            else{
+                resultsHTML += `
+                    <tbody>
+                        <tr>
+                            <td style="padding: 5px;">${player2Name}(You)</td>
+                            <td style="padding: 5px;">${player2CardsHTML}</td>
+                            <td style="padding: 5px;">${getChipsHTML(player2Name)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px;">${player1Name}</td>
+                            <td style="padding: 0px;">${player1CardsHTML}</td>
+                            <td style="padding: 5px;">${getChipsHTML(player1Name)}</td>
+                        </tr>
+                    </tbody>
+                `;
+            }
+
+            resultsHTML+=`
+                </table>
+                <br>
+                <button onclick="closeResults()" style="background-color: #ffcc00; padding: 10px 20px; color: #1f2937; border: none; font-size: 18px; cursor: pointer;">
+                    Done
+                </button>
+            `;
+
+            resultsDiv.innerHTML = resultsHTML;
+            document.body.appendChild(resultsDiv);
+        }
+    }
+
+    function prevRound() {
+        if (currentRoundIndex > 0) {
+            currentRoundIndex--;
+            updateUI();
+        }
+    }
+
+    function nextRound() {
+        if (currentRoundIndex < roundsData.length - 1) {
+            currentRoundIndex++;
+            updateUI();
+        }
+    }
+
+    // Initialize UI
+    updateUI();
+
+
+</script>
+
+{% endblock %}

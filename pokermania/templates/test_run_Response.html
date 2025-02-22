@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="video-container">
+    <video autoplay muted loop playsinline id="bg-video">
+        <source src="https://img.pikbest.com/09/42/51/38DpIkbEsTq9v.mp4" type="video/mp4">
+        Your browser does not support HTML5 video.
+    </video>
+</div>
+
+<div id="home-page" class="page">
+    <div class="container">
+        <div class="header">
+            <h1>Test Run Results</h1>
+            <p>Your bot was successfully tested. Below are the results :</p>
+        </div>
+
+        <div class="test-results">
+            {% if results %}
+                <h2>Test Results:</h2>
+                <div class="results-container">
+                    {% for result in results%}
+                        <div class="game-result">
+                            <h3>Game {{ forloop.counter }}: {{ result.opponent_name }}</h3>
+
+                            <div class="game-details">
+                                <p><strong>Winner:</strong> {{ result.winner }}</p>
+                                <p><strong>Chips Exchanged:</strong> {{ result.chips_exchanged }}</p>
+                            </div>
+
+                            <!-- Round Buttons -->
+                            <div class="round-buttons">
+                            <form method="GET" action="{% url 'test_replay' result.match_id %}" style="display:inline;">
+                                <input type="hidden" name="game_index" value="{{ forloop.counter0 }}">
+                                <input type="hidden" name="round_index" value="0"> <!-- Always the first round -->
+                                <button type="submit" class="btn btn-primary">
+                                    Replay Game
+                                </button>
+                            </form>
+                        </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No results available.</p>
+            {% endif %}
+            <form method="POST" action="{% url 'upload_bot' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="bot_name" value="{{ testbot.name }}">
+                    <input type="hidden" name="bot_file_path" value="{{ testbot.file.path }}">
+                    <button type="submit" class="red">Upload Bot</button>
+                </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .results-container {
+        margin-top: 20px;
+    }
+    .game-result {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .game-details p {
+        margin: 5px 0;
+    }
+    .round-buttons button {
+        margin: 5px 5px 5px 0;
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .round-buttons button:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock %}

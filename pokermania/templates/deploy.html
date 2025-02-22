@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Deploy Your Bot - PokerBots Arena{% endblock %}
+
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/loginstyles.css' %}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="video-container">
+        <video autoplay muted loop playsinline id="bg-video">
+            <source src="https://img.pikbest.com/09/42/51/38DpIkbEsTq9v.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Test Your Bot</h1>
+            <p>Upload your Python poker bot to test before submitting</p>
+        </div>
+
+        {% if messages %}
+            <div class="alert alert-primary">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        <br>
+
+        <div class="upload-form">
+            <form id="botUploadForm" method="POST" action="{% url 'test_run' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+        
+                <div class="form-group">
+                    <label for="botName">Bot Name</label>
+                    <input type="text" name="name" id="botName" required>
+                </div>
+        
+                <div class="form-group">
+                    <label for="botFile">Upload File</label>
+                    <input type="file" name="file" id="botFile" accept=".py" required>
+                </div>
+        
+                <div class="form-group">
+                    <label for="description">Bot Description</label>
+                    <textarea name="description" id="description" rows="4"></textarea>
+                </div>
+        
+                <button type="submit" class="red">Test Bot</button>
+            </form>
+        </div>
+        
+        <div class="deployment-status" style="display: none;">
+            <h2>Deployment Status</h2>
+            <div id="statusMessage"></div>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

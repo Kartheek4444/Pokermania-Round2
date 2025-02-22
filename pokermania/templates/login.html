@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+Login/Signup - PokerBots Arena
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/loginstyles.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="video-container">
+        <video autoplay muted loop playsinline id="bg-video">
+            <source src="https://img.pikbest.com/09/42/51/38DpIkbEsTq9v.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Welcome</h1>
+            <p>Login or create an account to deploy your poker bots</p>
+        </div>
+
+        {% if messages %}
+            <div class="alert alert-primary">
+                {% for message in messages %}
+                {{ message }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="auth-container">
+            <!-- Login Form -->
+            <div class="auth-form">
+                <h2 class="form-title">Login</h2>
+                <form action="{% url 'login' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" name="username" id="loginUsername" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" name="password" id="loginPassword" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="red">Login</button>
+                </form>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Sign Up Form -->
+            <div class="auth-form">
+                <h2 class="form-title">Create Account</h2>
+                <form action="{% url 'register' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="signupUsername">Username</label>
+                        <input type="text" name="username" id="signupUsername" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" name="email" id="signupEmail" required autocomplete="off">
+                        <small>⋅ Login with a email that you registered for Technex.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" name="password" id="signupPassword" required>
+                        <small>⋅ Password must be atleast 8 characters.</small><br>
+                        <small>⋅ Password must contain one capital letter and a number.</small><br>
+                        <small>⋅ Password must contain one special character.</small>
+                    </div>
+                    <div id="passwordMessage" style="color: rgb(255, 255, 255);"></div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" name="confirmPassword" id="confirmPassword" required>
+                    </div>
+                    <div id="passwordMatchMessage" style="color: rgb(255, 255, 255);"></div> 
+                    <button type="submit" class="red">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

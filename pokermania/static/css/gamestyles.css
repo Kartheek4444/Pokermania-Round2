@@ -1,0 +1,273 @@
+/* General Styles */
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-image: url('../images/table1.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+
+.game-container {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-table {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 2rem;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    position: relative;
+}
+
+.opponent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.player-cards {
+    display: flex;
+    gap: 0.25rem;
+    position: relative;
+}
+
+.balance {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.card-slot {
+    width: 60px;
+    height: 84px;
+    background-color: #1caa03;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.card-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bet {
+    position: absolute;
+    bottom: -30px; /* Adjust this value to position the bet below the card */
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffd700;
+    background-color: #1f2937;
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+}
+
+.bet-left {
+    left: 110px; /* Position it relative to the left card */
+}
+
+.bet-right {
+    right: 110px; /* Position it relative to the right card */
+}
+
+.center-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.card-pack {
+    width: 60px;
+    height: 84px;
+    background-color: #ef4444;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    background-image: url('../images/cards/card_back.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.community-cards {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.pot {
+    margin-top: 1.5rem;
+    font-size: 2.0rem;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.actions {
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    background-color: #1f2937;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffd700;
+    border-radius: 6px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.5);
+    width: 80%;
+    max-width: 300px;
+}
+
+.hidden {
+    display: none;
+}
+
+
+/* Media Queries for Responsiveness */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 0.85rem; /* Reduce base font size for all text */
+    }
+
+    .game-table {
+        grid-template-columns: 1fr; /* Stack elements vertically */
+    }
+    
+    .card-slot {
+        width: 45px;
+        height: 63px;
+        font-size: 0.9rem; /* Reduce font size of text inside card slots */
+        padding-top: 0; /* Remove padding above the card slots */
+        padding-bottom: 0; /* Remove padding below the card slots */
+    }
+
+    .bet {
+        bottom: -25px; /* Adjust the bet position on smaller screens */
+        font-size: 0.8rem; /* Reduced font size for bet */
+        padding-top: 0; /* Remove padding above the bet */
+        padding-bottom: 0; /* Remove padding below the bet */
+    }
+
+    .bet-left {
+        left: 90px; /* Position it relative to the left card */
+    }
+    
+    .bet-right {
+        right: 90px; /* Position it relative to the right card */
+    }
+
+    .balance {
+        font-size: 0.8rem; /* Reduced font size for balance */
+        padding-top: 0; /* Remove padding above the balance */
+        padding-bottom: 0; /* Remove padding below the balance */
+    }
+
+    .pot {
+        font-size: 1.2rem; /* Reduced font size for the pot */
+        padding-top: 0; /* Remove padding above the pot */
+        padding-bottom: 0; /* Remove padding below the pot */
+    }
+
+    .actions {
+        font-size: 0.8rem; /* Reduced font size for actions */
+        width: 90%; /* Adjust width for smaller screens */
+        max-width: 250px; /* Adjust max-width for smaller screens */
+        padding-top: 0; /* Remove padding above the actions */
+        padding-bottom: 0; /* Remove padding below the actions */
+        margin-top: -10px; /* Move the button up by adjusting the margin */
+    }
+
+    .card-pack {
+        width: 50px; /* Adjust width of card-pack */
+        height: 70px; /* Adjust height of card-pack */
+        font-size: 0.9rem; /* Reduce font size inside card pack */
+        padding-top: 0; /* Remove padding above the card pack */
+        padding-bottom: 0; /* Remove padding below the card pack */
+    }
+
+    .center-area {
+        padding-top: 0; /* Remove padding above the center area */
+        padding-bottom: 0; /* Remove padding below the center area */
+    }
+}
+
+/* Media Queries for Responsiveness */
+@media screen and (max-width: 480px) {
+    body {
+        font-size: 0.7rem; /* Reduce base font size for all text */
+    }
+
+    .game-table {
+        grid-template-columns: 1fr; /* Stack elements vertically */
+    }
+
+    .card-slot {
+        width: 40px;
+        height: 56px;
+        font-size: 0.9rem; /* Reduce font size of text inside card slots */
+        padding-top: 0; /* Remove padding above the card slots */
+        padding-bottom: 0; /* Remove padding below the card slots */
+    }
+
+    .bet {
+        bottom: -25px; /* Adjust the bet position on smaller screens */
+        font-size: 0.8rem; /* Reduced font size for bet */
+        padding-top: 0; /* Remove padding above the bet */
+        padding-bottom: 0; /* Remove padding below the bet */
+    }
+
+    .balance {
+        font-size: 0.7rem; /* Reduced font size for balance */
+        padding-top: 0; /* Remove padding above the balance */
+        padding-bottom: 0; /* Remove padding below the balance */
+    }
+
+    .pot {
+        font-size: 1.2rem; /* Reduced font size for the pot */
+        padding-top: 0; /* Remove padding above the pot */
+        padding-bottom: 0; /* Remove padding below the pot */
+    }
+
+    .actions {
+        font-size: 0.8rem; /* Reduced font size for actions */
+        width: 90%; /* Adjust width for smaller screens */
+        max-width: 250px; /* Adjust max-width for smaller screens */
+        padding-top: 0; /* Remove padding above the actions */
+        padding-bottom: 0; /* Remove padding below the actions */
+        margin-top: -10px; /* Move the button up by adjusting the margin */
+        transform: translateY(-10px); /* Alternative way to move the button up */
+    }
+
+    .card-pack {
+        width: 50px; /* Adjust width of card-pack */
+        height: 70px; /* Adjust height of card-pack */
+        font-size: 0.9rem; /* Reduce font size inside card pack */
+        padding-top: 0; /* Remove padding above the card pack */
+        padding-bottom: 0; /* Remove padding below the card pack */
+    }
+
+    .center-area {
+        padding-top: 0; /* Remove padding above the center area */
+        padding-bottom: 0; /* Remove padding below the center area */
+    }
+}
