@@ -177,9 +177,11 @@ def replay(request, match_id):
     if not request.user.is_staff and not request.user.is_superuser:
         return redirect('')
     
+    players = [bot.name for bot in match.players.all()]
     return render(request, 'game.html', {
         'match': match,
-        'rounds_data': match.rounds_data
+        'rounds_data': match.rounds_data,
+        'players': players,
     })
 
 
@@ -310,7 +312,18 @@ def admin_panel(request):
     # Fetch all test matches
     test_matches = TestMatch.objects.all()
 
-    return render(request, 'admin_panel.html', {
+    return render(request, 'admin_panel.html',{
         'test_bots': test_bots,
         'test_matches': test_matches,
     })
+
+def m(request):
+    players=[
+        {"id":1,"name":"player1"},
+        {"id":2,"name":"player2"},
+        {"id":3,"name":"player3"},
+        {"id":4,"name":"player4"},
+        {"id":5,"name":"player4"},
+        {"id":6,"name":"player4"},
+    ]
+    return render(request, 'multigame.html',{"players":players})
