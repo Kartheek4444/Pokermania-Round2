@@ -130,26 +130,37 @@
     function updateBalancesForRound(roundIndex){
         // Reset balances to the starting value at the start of the first round
         if(roundIndex === 0) {
+			if(playerCount===2){
+				playerBalances[1]=9750;
+				playerBalances[0]=9500;
+				playerBets[1]=250;
+				playerBets[0]=500;
+				return;
+			}
             playerBalances[1]=9750;
 			playerBalances[2]=9500;
 			playerBets[1]=250;
 			playerBets[2]=500;
         }
         else{
+            const round = roundsData[roundIndex - 1];
+
+			const winner = round.winner;
+
+			console.log(winner);
+			
+			if(winner!=="No one"){
+				let winnerIndex = playerNames.findIndex(player => player === winner);
+				playerBalances[winnerIndex] += round.chips_exchanged;
+			}
+
 			for(let i=0; i<playerCount; i++){
 				if(playerInGame[i] && playerBalances[i]===0){
 					playerInGame[i]=false;
 					playerBetsElements[i].classList.add('hidden');
 				}
 			}
-            const round = roundsData[roundIndex - 1];
-
-			const winner = round.winner;
-			
-			if(winner!=="No one"){
-				let winnerIndex = playerNames.findIndex(player => player === winner);
-				playerBalances[winnerIndex] += round.chips_exchanged;
-			}
+			console.log(playerBalances);
 
 			prevRoundBalances = playerBalances.slice();
 
@@ -186,7 +197,6 @@
 			}
         }
     }
-	updateBalancesForRound(0);
     
 	function getCardImage(cardName) {
 		const card = cards.find(c => c.name === cardName);
@@ -395,23 +405,25 @@
 			const chips_exchanged= round.chips_exchanged;
 			const winner = round.winner;
 			let roundBets = prevRoundBalances.map((balance, index) => balance - playerBalances[index]);
-			console.log(roundBets,prevRoundBalances);
 
             const playersCardsHTML = holecards.map((playerCards, index) => 
 				(playerInGame[index]||playerInRound) ? playerCards.map(card =>
 					`<img src="${getCardImage(card)}" alt="${card}" style="width: 15%; margin: 1px;">`
 				).join('') : ''
 			);
-			
-			const comunityCardsHTML = communityCards.map(card =>
-				`<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`
-			).join('');
+			const communityCardsHTML = '';
+			if(communityCards){
+				communityCardsHTML = communityCards.map(card =>
+					`<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`
+				).join('');
+			}
 			
 			const getChipsHTML = (playerName) => {
 
 				let ind=playerNames.indexOf(playerName);
 				if(playerName === winner){
-					return `<span style="color: #00ff00;">+${chips_exchanged-roundBets[ind]}</span>`;
+					playerBalances[ind] += roundBets[ind];
+					return `<span style="color: #00ff00;">+${chips_exchanged}</span>`;
 				} 
 				else if(playerInGame[ind]||playerInRound[ind]){
 					if(roundBets[ind]===0){
@@ -426,14 +438,14 @@
 			window.getChipsHTML = getChipsHTML;
 
 			
-			let winnerHTML = `<strong style="color: #00ff00;">${winner}</strong> wins <strong style="color: #00ff00;">${chips_exchanged}</strong> from the pot!`;
+			let winnerHTML = `<strong">${winner}</strong> wins <strong style="color: #00ff00;">${chips_exchanged}</strong> from the pot!`;
 
 			let resultsHTML = `
 				<h2 style="color: white;">Round Complete!</h2>
 				<div style="color: yellow;">${winnerHTML}</div>
 				
 				<h3 style="color: white;">Community Cards</h3>
-				<div>${comunityCardsHTML}</div>
+				<div>${communityCardsHTML}</div>
 				
 				<h3>Results</h3>
 				<table style="width: 80%; margin-top: 20px; border-collapse: collapse; margin-left: auto; margin-right: auto;">

@@ -11,7 +11,6 @@ urlpatterns = [
     path('',views.home, name='home'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    path('my_bots/', views.my_bots, name='my_bots'),
     path('replay/<int:match_id>/', views.replay, name='replay'),
     path('deploy_bot/', views.deploy_bot, name='deploy_bot'),
     path('contact_us/', views.contact_us, name='contact_us'),

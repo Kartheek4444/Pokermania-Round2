@@ -132,46 +132,6 @@ def upload_bot(request):
 
 
 @login_required
-def my_bots(request):
-    # Fetch only the user's bots
-    bots = Bot.objects.filter(user=request.user)
-    selected_bot = request.GET.get('bot', 'all')
-    bot_matches = {}
-
-    if selected_bot != 'all':
-        # Fetch matches for the selected bot
-        selected_bot_instance = Bot.objects.get(name=selected_bot, user=request.user)
-        matches = Match.objects.filter(bot1=selected_bot_instance) | Match.objects.filter(bot2=selected_bot_instance)
-    else:
-        # Fetch matches for all bots owned by the user
-        matches = Match.objects.filter(bot1__in=bots) | Match.objects.filter(bot2__in=bots)
-
-    for match in matches:
-        for bot in [match.bot1, match.bot2]:
-            if bot.user == request.user:
-                if bot.name not in bot_matches:
-                    bot_matches[bot.name] = []
-
-                opponent = match.bot2 if bot == match.bot1 else match.bot1
-                bot_matches[bot.name].append({
-                    'bot_name': bot.name,
-                    'opponent': opponent.name,
-                    'result': match.winner,
-                    'date': match.played_at,
-                    'chips_exchanged': abs(match.total_chips_exchanged),
-                    'id': match.id,
-                    'bot1_wins': match.bot1_wins,
-                    'bot2_wins': match.bot2_wins
-                })
-
-    return render(request, 'bots.html', {
-        'bots': bots,
-        'bot_matches': bot_matches,
-        'selected_bot': selected_bot,
-    })
-
-
-@login_required
 def test_run(request):
     user = request.user
     bot_name = request.POST.get('name')
@@ -285,7 +245,7 @@ def test_match_results(request, bot_id):
         'testbot': bot_instance,
         'results': results,
     }
-    return render(request, 'test_run_Response2.html', context)
+    return render(request, 'test_run_Response.html', context)
 
 @login_required
 def admin_panel(request):
@@ -305,8 +265,9 @@ def admin_panel(request):
             messages.error(request, "Maximum 6 bots allowed per match.")
             return redirect('admin_panel')
 
-        # Run the match using your existing play_match function
-        result = play_match(selected_bots)
+        bot_paths = [bot.file.path for bot in selected_bots]
+
+        result = play_match(bot_paths,selected_bots)
         
         # Handle errors from play_match
         if isinstance(result[0], list):  # Error case
@@ -315,27 +276,19 @@ def admin_panel(request):
             return redirect('admin_panel')
         
         # Unpack normal results
-        winner_name, chips_exchanged, rounds_data, bot_wins = result
+        winner_name,rounds_data = result
 
-        try:
-            # Get winner bot instance
-            winner_bot = Bot.objects.get(name=winner_name)
-            
-            # Calculate total chips exchanged
-            total_chips = sum(abs(value) for value in chips_exchanged.values())
-            
+        if(rounds_data==None):
+            return JsonResponse({"Error":winner_name})
+
+        try:            
             # Create match record
             match = Match.objects.create(
-                winner=winner_bot,
-                total_chips_exchanged=total_chips,
+                winner=winner_name,
                 rounds_data=rounds_data
             )
             match.players.add(*selected_bots)
-            
-            messages.success(request, f"Match completed! Winner: {winner_name}")
         
-        except Bot.DoesNotExist:
-            messages.error(request, "Could not find winner bot in database")
         except Exception as e:
             messages.error(request, f"Error saving match: {str(e)}")
 
@@ -348,7 +301,7 @@ def admin_panel(request):
     return render(request, 'admin_panel.html', {
         'all_bots': all_bots,
         'recent_matches': recent_matches,
-        'max_bots': range(2, 7)  # For template display
+        'max_bots': range(2, 7)
     })
 
 @login_required
@@ -358,7 +311,7 @@ def replay(request, match_id):
     
     match = get_object_or_404(Match,id=match_id)
     players = [bot.name for bot in match.players.all()]
-    return render(request, 'game.html',{
+    return render(request, 'multigame.html',{
         'rounds_data': match.rounds_data,
         'players': players,
     })

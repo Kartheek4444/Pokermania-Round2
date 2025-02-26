@@ -39,8 +39,6 @@ class Match(models.Model):
     id = models.AutoField(primary_key=True)
     players = models.ManyToManyField(Bot, related_name="matches")  # Multiple bots per match
     winner = models.TextField()
-    total_chips_exchanged = models.IntegerField(default=0)
-    total_rounds = models.IntegerField(default=50)
     played_at = models.DateTimeField(auto_now_add=True)
     rounds_data = models.JSONField(max_length=100000)
 
@@ -48,7 +46,8 @@ class Match(models.Model):
         ordering = ['-played_at']
 
     def __str__(self):
-        return f"{self.bot1.name} vs {self.bot2.name} ({self.played_at.date()})"
+        player_names = ", ".join(bot.name for bot in self.players.all())
+        return f"Match ({self.played_at.date()}): {player_names} | Winner: {self.winner}"
 
 
 

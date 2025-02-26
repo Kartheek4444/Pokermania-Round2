@@ -52,7 +52,7 @@
                             Upload your Python bot and watch it compete in real-time against other players' bots in the ultimate test of strategy and skill.
                         {% endif %}
                     </p>
-                    <button onclick="window.location.href='{% if user.is_superuser %}{% url 'admin_panel' %}{% elif user.is_staff %}{% url 'staff_dashboard' %}{% else %}{% url 'deploy_bot' %}{% endif %}'" class="red">
+                    <button onclick="window.location.href='{% if user.is_superuser %}{% url 'admin_panel' %}{% elif user.is_staff %}{% url 'admin_panel' %}{% else %}{% url 'deploy_bot' %}{% endif %}'" class="red">
                         {% if user.is_superuser or user.is_staff %}
                             Go to Admin Panel
                         {% else %}

@@ -64,6 +64,18 @@ def parse_poker_output_to_json(content):
             action_match = action_pattern.search(line)
             if action_match:
                 name, action, amount = action_match.groups()
+
+                if not amount.isdigit():
+                    return "Invalid amount"
+                
+                amount = int(amount)
+
+                if amount <= 0:
+                    if amount == 0 and (action == "call" or action == "fold"):
+                        pass
+                    else:
+                        return "Invalid amount", amount
+        
                 current_round["actions"][current_street].append({"name": name, "action": action, "amount": int(amount)})
                 continue
 
@@ -82,7 +94,7 @@ def parse_poker_output_to_json(content):
     return {"rounds": rounds}
 
 
-def play_match(bot_paths, bots, num_rounds=5, stack=10000):
+def play_match(bot_paths, bots):
 
     bot_instances = []
     checks = []
@@ -96,19 +108,21 @@ def play_match(bot_paths, bots, num_rounds=5, stack=10000):
 
     bot_wins = {bot.name: 0 for bot in bots}
     rounds_data = []
-    previous_stack = {bot.name: stack for bot in bots}
+    previous_stack = {bot.name: 10000 for bot in bots}
 
-    config = setup_config(max_round=num_rounds, initial_stack=stack, small_blind_amount=250)
+    config = setup_config(max_round=5, initial_stack=10000, small_blind_amount=250)
     for bot, instance in zip(bots, bot_instances):
         config.register_player(name=bot.name, algorithm=instance)
 
     output_file = "poker_output.txt"
 
-    # Capture the entire output of the match (all rounds) at once
     result, success = redirect_stdout_to_file(config, output_file)
 
     # Read and parse the output file
-    replay_data = read_output_file_and_parse(output_file)
+    replay_data= read_output_file_and_parse(output_file)
+
+    if replay_data == "Invalid amount":
+        return "Invalid Action or Amount check ur code",None
     # Break down the replay data into individual rounds
 
     for round_num in range(len(replay_data["rounds"])):
@@ -156,8 +170,8 @@ def play_match(bot_paths, bots, num_rounds=5, stack=10000):
 
         hole_cards = []
         for i, bot in enumerate(bots):
-            if bot.name in active_players:
-                hole_cards.append(bot_instances[i].hole_cards_log[round_num]["hole_cards"])
+            if str(bot.name) in active_players:
+                hole_cards.append(bot_instances[i].hole_cards_log[round_num])
 
         if winner is None or stacks == {}:  # tie has happened
             rounds_data.append({
@@ -200,7 +214,7 @@ def play_match(bot_paths, bots, num_rounds=5, stack=10000):
     #     bot_wins, num_rounds
     # )
 
-    return match_winner, chips_exchanged, rounds_data
+    return match_winner,rounds_data
 
 
 def redirect_stdout_to_file(config, output_file):
