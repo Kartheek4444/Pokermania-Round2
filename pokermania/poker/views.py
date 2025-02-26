@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-import re, os
+import re, os, json
 from pypokerengine.api.game import setup_config
 from .models import Bot, Match, TestBot, TestMatch
 from .utils import play_match, load_bot, redirect_stdout_to_file
@@ -171,19 +171,6 @@ def my_bots(request):
         'selected_bot': selected_bot,
     })
 
-@login_required
-def replay(request, match_id):
-    match = get_object_or_404(Match,id=match_id)
-    if not request.user.is_staff and not request.user.is_superuser:
-        return redirect('')
-    
-    players = [bot.name for bot in match.players.all()]
-    return render(request, 'game.html', {
-        'match': match,
-        'rounds_data': match.rounds_data,
-        'players': players,
-    })
-
 
 @login_required
 def test_run(request):
@@ -317,13 +304,14 @@ def admin_panel(request):
         'test_matches': test_matches,
     })
 
-def m(request):
-    players=[
-        {"id":1,"name":"player1"},
-        {"id":2,"name":"player2"},
-        {"id":3,"name":"player3"},
-        {"id":4,"name":"player4"},
-        {"id":5,"name":"player4"},
-        {"id":6,"name":"player4"},
-    ]
-    return render(request, 'multigame.html',{"players":players})
+@login_required
+def replay(request, match_id):
+    match = get_object_or_404(Match,id=match_id)
+    if not request.user.is_staff and not request.user.is_superuser:
+        return redirect('')
+    
+    players = [bot.name for bot in match.players.all()]
+    return render(request, 'multigame.html', {
+        'rounds_data': match.rounds_data,
+        'players': players,
+    })

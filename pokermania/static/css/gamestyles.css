@@ -397,40 +397,39 @@ body {
     margin-top:-25px;
 }
 /* Opponent positions - Fixed */
-#player1 {
+.player1 {
     position: absolute;
-    top: 0%;
+    top: 2%;
     left: 50%;
     transform: translateX(-50%);
   }
   
-  #player2 {
+.player2 {
     position: absolute;
     top: 15%;
     right: 10%;
-  }
-  
-  #player3 {
+}
+
+.player3 {
     position: absolute;
     bottom: 15%;
     right: 10%;
-  }
-  
-  #player4 {
+}
+
+.player4 {
     position: absolute;
-    bottom: 0%;
+    bottom: 2%;
     left: 50%;
     transform: translateX(-50%);
-  }
-  
-  #player5 {
+}
+
+.player5 {
     position: absolute;
     bottom: 15%;
     left: 10%;
-  }
-  
-  #player6 {
+}
+.player6 {
     position: absolute;
     top: 15%;
     left: 10%;
-  }
+}

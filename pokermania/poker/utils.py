@@ -1,3 +1,4 @@
+from calendar import c
 import sys
 import io
 from django.shortcuts import render, redirect
@@ -81,21 +82,25 @@ def parse_poker_output_to_json(content):
     return {"rounds": rounds}
 
 
-def play_match(bot1_path, bot2_path, bot1, bot2, num_rounds=5, stack=10000):
-    bot1_instance, chk1 = load_bot(bot1_path,bot1.name)
-    bot2_instance, chk2 = load_bot(bot2_path,bot2.name)
+def play_match(bot_paths, bots, num_rounds=5, stack=10000):
 
-    if not chk1 or not chk2:
-        return bot1_instance, bot2_instance, None, None
+    bot_instances = []
+    checks = []
+    for bot, path in zip(bots, bot_paths):
+        instance, chk = load_bot(path, bot.name)
+        bot_instances.append(instance)
+        checks.append(chk)
 
-    bot1_wins = 0
-    bot2_wins = 0
+    if not all(checks):
+        return bot_instances, None, None
+
+    bot_wins = {bot.name: 0 for bot in bots}
     rounds_data = []
-    results_stack = 0
+    previous_stack = {bot.name: stack for bot in bots}
 
     config = setup_config(max_round=num_rounds, initial_stack=stack, small_blind_amount=250)
-    config.register_player(name=bot1.name, algorithm=bot1_instance)
-    config.register_player(name=bot2.name, algorithm=bot2_instance)
+    for bot, instance in zip(bots, bot_instances):
+        config.register_player(name=bot.name, algorithm=instance)
 
     output_file = "poker_output.txt"
 
@@ -104,7 +109,6 @@ def play_match(bot1_path, bot2_path, bot1, bot2, num_rounds=5, stack=10000):
 
     # Read and parse the output file
     replay_data = read_output_file_and_parse(output_file)
-    previous_stack = [stack, stack]
     # Break down the replay data into individual rounds
 
     for round_num in range(len(replay_data["rounds"])):
@@ -114,12 +118,9 @@ def play_match(bot1_path, bot2_path, bot1, bot2, num_rounds=5, stack=10000):
             continue  # Skip if no data for the current round
 
         # Initialize structures
-        actions = {'preflop': {'name': [], 'action': [], 'amount': []},
-                   'flop': {'name': [], 'action': [], 'amount': []},
-                   'turn': {'name': [], 'action': [], 'amount': []},
-                   'river': {'name': [], 'action': [], 'amount': []}}
+        actions = {street: {"name": [], "action": [], "amount": []} for street in ['preflop', 'flop', 'turn', 'river']}
 
-        communitycards = [[], [], [], []]  # preflop, flop, turn, river
+        communitycards = {street: [] for street in ['preflop', 'flop', 'turn', 'river']}
         streets = []  # Will store the streets that actually happened
 
         # Process each street
@@ -132,23 +133,31 @@ def play_match(bot1_path, bot2_path, bot1, bot2, num_rounds=5, stack=10000):
                 actions[street]['amount'] = [action['amount'] for action in street_actions]
 
                 # Update community cards
-            if street == 'preflop':
-                communitycards[0] = []  # No community cards for preflop
-            else:
-                communitycards_index = ['flop', 'turn', 'river'].index(street) + 1
-                communitycards[communitycards_index] = round_data.get("community_cards", {}).get(street, [])
+            if street != 'preflop':
+                communitycards[street] = round_data.get("community_cards", {}).get(street, [])
 
         # Assemble round data in the desired format
 
         # Accessing the round result
-        winner = round_data["winner"]
-        stacks = round_data["stacks"]
-        bot1_hole_cards=bot1_instance.hole_cards_log
-        bot2_hole_cards=bot2_instance.hole_cards_log
+        winner = round_data.get("winner")
+        stacks = round_data.get("stacks", {})
 
-        hole_cards=[[],[]]
-        hole_cards[0]=bot1_hole_cards[round_num]["hole_cards"]
-        hole_cards[1]=bot2_hole_cards[round_num]["hole_cards"]
+        # Determine active players for the round
+        active_players = set()
+
+        # Extract players from actions
+        for street, a in replay_data["rounds"][round_num]["actions"].items():
+            for action in a:
+                active_players.add(action["name"])
+        # Extract the round winner (if not already included)
+        winner = replay_data["rounds"][round_num]["winner"]
+        if winner and winner != "No one":
+            active_players.add(winner)
+
+        hole_cards = []
+        for i, bot in enumerate(bots):
+            if bot.name in active_players:
+                hole_cards.append(bot_instances[i].hole_cards_log[round_num]["hole_cards"])
 
         if winner is None or stacks == {}:  # tie has happened
             rounds_data.append({
@@ -161,44 +170,37 @@ def play_match(bot1_path, bot2_path, bot1, bot2, num_rounds=5, stack=10000):
                 'winner': "No one"
             })
         else:
-
-            stacks_array = list(stacks.values())
-
-            round_chips = abs(stacks_array[0] - previous_stack[0])
-            both_chips_exchanged = abs(stacks_array[0] - previous_stack[0]) + abs(stacks_array[1] - previous_stack[1])
+            stacks_array = {name: value for name, value in stacks.items()}
+            chips_exchanged = 0
+            for bot in bots:
+                if bot.name in active_players:
+                    chips_exchanged += abs(stacks_array[bot.name] - previous_stack[bot.name])
+            chips_exchanged/=2
             previous_stack = stacks_array
 
-            if winner == bot1.name:
-                bot1_wins += 1
-            else:
-                bot2_wins += 1
+            # if winner in bot_wins:
+            #     bot_wins[winner] += 1
 
             rounds_data.append({
                 'hole_cards': hole_cards,
                 'street': streets,
                 'actions': actions,
                 'communitycards': communitycards,
-                'chips_exchanged': abs(round_chips),
-                'total_chips_exchanged': both_chips_exchanged,
+                'chips_exchanged': chips_exchanged,
                 'winner': winner
             })
 
     # Determine match winner
-    winner = ""
-    if bot1_wins > bot2_wins:
-        winner = bot1.name
-    elif bot2_wins > bot1_wins:
-        winner = bot2.name
-    else:
-        winner = "No one"
+    match_winner = max(bot_wins, key=bot_wins.get, default="No one")
 
     # Update bot statistics
-    update_bot_stats(bot1, bot2, winner, abs(result["players"][0]["stack"] - result["rule"]["initial_stack"]),
-                     bot1_wins, num_rounds)
+    # update_bot_stats(
+    #     bots, match_winner, 
+    #     abs(result["players"][0]["stack"] - result["rule"]["initial_stack"]),
+    #     bot_wins, num_rounds
+    # )
 
-
-    return winner, abs(result["players"][0]["stack"] - result["rule"]["initial_stack"]), rounds_data, [bot1_wins,
-                                                                                                       bot2_wins]
+    return match_winner, chips_exchanged, rounds_data
 
 
 def redirect_stdout_to_file(config, output_file):
@@ -241,24 +243,15 @@ def read_output_file_and_parse(input_file):
     return parse_poker_output_to_json(content)
 
 
-def update_bot_stats(bot1, bot2, winner, chips_exchanged, bot1_wins, num_rounds):
-    chips_per_round = chips_exchanged / num_rounds
-    score_per_round = 20 + 80 * chips_per_round / 10000
+# def update_bot_stats(bots, winner_name, chips_exchanged, bot_wins, num_rounds):
 
-    if winner == bot1.name:
-        bot1.chips_won += chips_exchanged
-        bot2.chips_won -= chips_exchanged
-        bot1.wins += 1
-        bot1.score += score_per_round * bot1_wins
-        bot2.score -= score_per_round * (num_rounds - bot1_wins)
-    else:
-        bot1.chips_won -= chips_exchanged
-        bot2.chips_won += chips_exchanged
-        bot2.wins += 1
-        bot2.score += score_per_round * (num_rounds - bot1_wins)
-        bot1.score -= score_per_round * bot1_wins
+#     for bot in bots:
+#         bot.total_games += 1  # Increment total games played
 
-    bot1.total_games += 1
-    bot2.total_games += 1
-    bot1.save()
-    bot2.save()
+#         if bot.name == winner_name:
+#             bot.wins += 1
+#             bot.chips_won += chips_exchanged  
+#         else:
+#             bot.chips_won -= chips_exchanged  
+
+#         bot.save()
