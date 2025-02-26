@@ -1,5 +1,4 @@
 import traceback
-
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.http import JsonResponse
@@ -10,7 +9,7 @@ from django.shortcuts import render, redirect
 import re, os, json
 from pypokerengine.api.game import setup_config
 from .models import Bot, Match, TestBot, TestMatch
-from .utils import play_match, load_bot, redirect_stdout_to_file
+from .utils import play_match
 
 User = get_user_model()
 
@@ -291,27 +290,75 @@ def test_match_results(request, bot_id):
 @login_required
 def admin_panel(request):
     if not request.user.is_staff and not request.user.is_superuser:
-        return redirect('')
+        return redirect('home')
 
-    # Fetch all test bots
-    test_bots = TestBot.objects.all()
+    if request.method == 'POST':
+        # Get selected bots from form
+        selected_bot_ids = request.POST.getlist('bots')
+        selected_bots = Bot.objects.filter(id__in=selected_bot_ids)
+        
+        # Validate selection
+        if len(selected_bots) < 2:
+            messages.error(request, "Please select at least 2 bots.")
+            return redirect('admin_panel')
+        if len(selected_bots) > 6:
+            messages.error(request, "Maximum 6 bots allowed per match.")
+            return redirect('admin_panel')
 
-    # Fetch all test matches
-    test_matches = TestMatch.objects.all()
+        # Run the match using your existing play_match function
+        result = play_match(selected_bots)
+        
+        # Handle errors from play_match
+        if isinstance(result[0], list):  # Error case
+            for error in result[0]:
+                messages.error(request, error)
+            return redirect('admin_panel')
+        
+        # Unpack normal results
+        winner_name, chips_exchanged, rounds_data, bot_wins = result
 
-    return render(request, 'admin_panel.html',{
-        'test_bots': test_bots,
-        'test_matches': test_matches,
+        try:
+            # Get winner bot instance
+            winner_bot = Bot.objects.get(name=winner_name)
+            
+            # Calculate total chips exchanged
+            total_chips = sum(abs(value) for value in chips_exchanged.values())
+            
+            # Create match record
+            match = Match.objects.create(
+                winner=winner_bot,
+                total_chips_exchanged=total_chips,
+                rounds_data=rounds_data
+            )
+            match.players.add(*selected_bots)
+            
+            messages.success(request, f"Match completed! Winner: {winner_name}")
+        
+        except Bot.DoesNotExist:
+            messages.error(request, "Could not find winner bot in database")
+        except Exception as e:
+            messages.error(request, f"Error saving match: {str(e)}")
+
+        return redirect('admin_panel')
+
+    # GET request - show all bots and recent matches
+    all_bots = Bot.objects.all().order_by('name')
+    recent_matches = Match.objects.all().order_by('-played_at')[:10]
+
+    return render(request, 'admin_panel.html', {
+        'all_bots': all_bots,
+        'recent_matches': recent_matches,
+        'max_bots': range(2, 7)  # For template display
     })
 
 @login_required
 def replay(request, match_id):
-    match = get_object_or_404(Match,id=match_id)
     if not request.user.is_staff and not request.user.is_superuser:
         return redirect('')
     
+    match = get_object_or_404(Match,id=match_id)
     players = [bot.name for bot in match.players.all()]
-    return render(request, 'multigame.html', {
+    return render(request, 'game.html',{
         'rounds_data': match.rounds_data,
         'players': players,
     })

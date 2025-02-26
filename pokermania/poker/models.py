@@ -42,7 +42,7 @@ class Match(models.Model):
     total_chips_exchanged = models.IntegerField(default=0)
     total_rounds = models.IntegerField(default=50)
     played_at = models.DateTimeField(auto_now_add=True)
-    rounds_data = models.JSONField(max_length=100000)  # New field to store data for all rounds
+    rounds_data = models.JSONField(max_length=100000)
 
     class Meta:
         ordering = ['-played_at']
@@ -50,22 +50,6 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.bot1.name} vs {self.bot2.name} ({self.played_at.date()})"
 
-
-class Round(models.Model):
-    """New model to store individual round data"""
-    match = models.ForeignKey(Match, related_name='rounds', on_delete=models.CASCADE)
-    round_number = models.IntegerField()
-    winner = models.TextField()
-    chips_exchanged = models.IntegerField()
-    replay_data = models.JSONField(max_length=100000)
-    hole_cards = models.JSONField()
-
-    class Meta:
-        ordering = ['round_number']
-        unique_together = ['match', 'round_number']
-
-    def __str__(self):
-        return f"Round {self.round_number} of {self.match}"
 
 
 class TestBot(models.Model):
