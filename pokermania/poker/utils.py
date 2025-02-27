@@ -110,7 +110,7 @@ def play_match(bot_paths, bots):
     rounds_data = []
     previous_stack = {bot.name: 10000 for bot in bots}
 
-    config = setup_config(max_round=5, initial_stack=10000, small_blind_amount=250)
+    config = setup_config(max_round=100000, initial_stack=10000, small_blind_amount=250)
     for bot, instance in zip(bots, bot_instances):
         config.register_player(name=bot.name, algorithm=instance)
 

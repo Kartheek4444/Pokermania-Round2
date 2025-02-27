@@ -114,8 +114,8 @@ def upload_bot(request):
     print(f"User: {user.username}")
     print(f"Bot Name: {bot_name}")
     print(f"Bot File Path: {bot_file_path}")
-    if Bot.objects.filter(user=user).count()>10:
-        messages.error(request, "You can only upload 10 bot.")
+    if Bot.objects.filter(user=user).count()>1:
+        messages.error(request, "You can only upload 1 bot.")
         return redirect('deploy_bot') 
 
     try:
@@ -135,7 +135,7 @@ def upload_bot(request):
         messages.error(request, "An error occurred while uploading the bot.")
         return redirect('deploy_bot')
 
-    return redirect('home')
+    return redirect('deploy_bot')
 
 @login_required
 @transaction.atomic
@@ -252,24 +252,24 @@ def test_match_results(request, match_id):
         testbot = match.players.filter(user=request.user).first()
         if not testbot:
             messages.error(request, "You don't have permission to view this match")
-            return redirect('home')  # Redirect to appropriate page
+            return redirect('deploy_bot')  # Redirect to appropriate page
 
         # Validate match data integrity
         if not all(hasattr(match, attr) for attr in ['winner', 'played_at', 'rounds_data']):
             messages.error(request, "Invalid match data structure")
-            return redirect('home')
+            return redirect('deploy_bot')
 
         # Safely prepare opponents list
         try:
             opponents = [player.name for player in match.players.all() if player.id != testbot.id]
         except AttributeError as e:
             messages.error(request, f"Error processing player data: {str(e)}")
-            return redirect('home')
+            return redirect('deploy_bot')
 
         # Validate rounds data format
         if not isinstance(match.rounds_data, list):
             messages.error(request, "Invalid round data format")
-            return redirect('home')
+            return redirect('deploy_bot')
 
         # Prepare results with error handling
         try:
@@ -282,7 +282,7 @@ def test_match_results(request, match_id):
             }]
         except KeyError as e:
             messages.error(request, f"Missing key in match data: {str(e)}")
-            return redirect('home')
+            return redirect('deploy_bot')
 
         context = {
             'testbot': testbot,
@@ -297,12 +297,12 @@ def test_match_results(request, match_id):
         
     except ObjectDoesNotExist as e:
         messages.error(request, "Requested resource no longer exists")
-        return redirect('home')
+        return redirect('deploy_bot')
         
     except Exception as e:
         # Log the exception here (consider adding logging)
         messages.error(request, "An unexpected error occurred")
-        return redirect('home')
+        return redirect('deploy_bot')
 
 
 @login_required
