@@ -102,8 +102,8 @@
     ];
     const roundsData = {{ rounds_data|safe }}; 
     const playerNames = {{ players|safe }};
-    console.log(roundsData);
-	console.log(playerNames);
+    // console.log(roundsData);
+	// console.log(playerNames);
 	let playerCount = playerNames.length;
     let currentRoundIndex = 0;
 	let playerBalances = new Array(playerCount).fill(10000);
@@ -262,10 +262,10 @@
 	function updateUI(){
 		resetUI();
 		const round=roundsData[currentRoundIndex];
-		console.log(round)
+		// console.log(round)
 		document.getElementById('current-round').textContent = `Round ${currentRoundIndex+1}`;
 		const holecards = round.hole_cards;
-        console.log(holecards)
+        // console.log(holecards)
 		const communitycards = round.communitycards;
 		const actions = round.actions;
 		let playerInRound = playerInGame.slice();
@@ -376,7 +376,7 @@
             else{
 				// console.log("Game Over");
                 dimPage();
-                showResults(holecards, communitycards[currentStreet]);
+                showResults(holecards, communitycards[street]);
             }
         }
 
@@ -414,7 +414,7 @@
 					`<img src="${getCardImage(card)}" alt="${card}" style="width: 15%; margin: 1px;">`
 				).join('') : ''
 			);
-			const communityCardsHTML = '';
+			let communityCardsHTML = '';
 			if(communityCards){
 				communityCardsHTML = communityCards.map(card =>
 					`<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`

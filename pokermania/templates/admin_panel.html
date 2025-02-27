@@ -129,7 +129,7 @@
                     <tr>
                         <td>
                             {% for bot in match.players.all %}
-                                {{ bot.name }}
+                                {{ bot.name }}{% if not forloop.last %}  ||  {% endif %}
                             {% endfor %}
                         </td>
                         <td>{{ match.winner }}</td>

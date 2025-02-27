@@ -102,8 +102,8 @@
     ];
     const roundsData = {{ rounds_data|safe }}; 
     const playerNames = {{ players|safe }};
-    console.log(roundsData);
-	console.log(playerNames);
+    // console.log(roundsData);
+	// console.log(playerNames);
 	let playerCount = playerNames.length;
     let currentRoundIndex = 0;
 	let playerBalances = new Array(playerCount).fill(10000);
@@ -160,7 +160,7 @@
 					playerBetsElements[i].classList.add('hidden');
 				}
 			}
-			console.log(playerBalances);
+			// console.log(playerBalances);
 
 			prevRoundBalances = playerBalances.slice();
 
@@ -359,13 +359,13 @@
 				if (currentStreet < streets.length - 1) {
 					currentStreet++;
 					if (currentStreet === 1) {
-						setCardImage("community-card-1", getCardImage(communitycards[1][0]));
-						setCardImage("community-card-2", getCardImage(communitycards[1][1]));
-						setCardImage("community-card-3", getCardImage(communitycards[1][2]));
+						setCardImage("community-card-1", getCardImage(communitycards["flop"][0]));
+						setCardImage("community-card-2", getCardImage(communitycards["flop"][1]));
+						setCardImage("community-card-3", getCardImage(communitycards["flop"][2]));
 					} else if (currentStreet === 2) {
-						setCardImage("community-card-4", getCardImage(communitycards[2][3]));
+						setCardImage("community-card-4", getCardImage(communitycards["turn"][3]));
 					} else if (currentStreet === 3) {
-						setCardImage("community-card-5", getCardImage(communitycards[3][4]));
+						setCardImage("community-card-5", getCardImage(communitycards["river"][4]));
 						done=true;
 					}
                 }
@@ -373,7 +373,7 @@
             else{
 				// console.log("Game Over");
                 dimPage();
-                showResults(holecards, communitycards[currentStreet]);
+                showResults(holecards, communitycards[street]);
             }
         }
 
@@ -411,7 +411,8 @@
 					`<img src="${getCardImage(card)}" alt="${card}" style="width: 15%; margin: 1px;">`
 				).join('') : ''
 			);
-			const communityCardsHTML = '';
+			let communityCardsHTML = '';
+			console.log(communityCards)
 			if(communityCards){
 				communityCardsHTML = communityCards.map(card =>
 					`<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`

@@ -114,8 +114,8 @@ def upload_bot(request):
     print(f"User: {user.username}")
     print(f"Bot Name: {bot_name}")
     print(f"Bot File Path: {bot_file_path}")
-    if Bot.objects.filter(user=user).count()>1:
-        messages.error(request, "You can only upload 1 bot.")
+    if Bot.objects.filter(user=user).count()>10:
+        messages.error(request, "You can only upload 10 bot.")
         return redirect('deploy_bot') 
 
     try:
@@ -128,6 +128,7 @@ def upload_bot(request):
 
     try:
         Bot.objects.create(user=user, name=bot_name, file=bot_file, path=bot_file_path)
+        
         messages.success(request, f"Bot '{bot_name}' uploaded successfully!")
     
     except Exception as e:
@@ -323,7 +324,7 @@ def admin_panel(request):
             messages.error(request, "Maximum 6 bots allowed per match.")
             return redirect('admin_panel')
 
-        bot_paths = [bot.file.path for bot in selected_bots]
+        bot_paths = [bot.path for bot in selected_bots]
 
         result = play_match(bot_paths,selected_bots)
         
