@@ -203,17 +203,11 @@ def test_replay(request, match_id):
 def test_match_results(request, match_id):
     # Fetch the bot instance
     match=get_object_or_404(TestMatch,id=match_id)
-    bot_instance = match.bot1
-
-    # Fetch matches involving the bot
-    # matches = TestMatch.objects.filter(
-    #     players=bot_instance  # Filter matches where the bot is one of the players
-    # ).order_by('-played_at')
-
+    testbot = match.players.filter(user=request.user).first()
     # Collect match results
     results = []
     # Get the opponent(s) for the match
-    opponents = [player.name for player in match.players.all() if player.id != bot_instance.id]
+    opponents = [player.name for player in match.players.all() if player.id != testbot.id]
     results.append({
         'match': match,
         'opponents': opponents,  # List of opponent names
@@ -224,7 +218,7 @@ def test_match_results(request, match_id):
 
     # Prepare the context
     context = {
-        'testbot': bot_instance,
+        'testbot': testbot,
         'results': results,
     }
 
