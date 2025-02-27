@@ -6,6 +6,10 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 import re, os, json
 from pypokerengine.api.game import setup_config
 from .models import Bot, Match, TestBot, TestMatch
@@ -134,61 +138,96 @@ def upload_bot(request):
     return redirect('home')
 
 @login_required
+@transaction.atomic
 def test_run(request):
-    user = request.user
-    bot_name = request.POST.get('name')
-    bot_file = request.FILES['file']
+    try:
+        user = request.user
+        bot_name = request.POST.get('name').strip()
+        bot_file = request.FILES['file']
 
-    if Bot.objects.filter(name=bot_name).exists():
-        messages.info(request, "BotName already taken!")
+        # Validate bot name
+        if not bot_name:
+            messages.error(request, "Bot name cannot be empty")
+            return redirect('/deploy_bot/')
+
+        # Check for existing bot names
+        if TestBot.objects.filter(name=bot_name).exists():
+            messages.info(request, "Bot name already taken!")
+            return redirect('/deploy_bot/')
+
+        # Create new test bot
+        try:
+            new_test_bot = TestBot.objects.create(
+                user=user,
+                name=bot_name,
+                file=bot_file
+            )
+        except (IOError, ValidationError) as e:
+            messages.error(request, f"Error saving bot file: {str(e)}")
+            return redirect('/deploy_bot/')
+
+        # Load predefined bots with error handling
+        predefined_bots_info = [
+            {"name": "Aggressive", "path": "bots/aggressive_bot.py"},
+            {"name": "Always_Call", "path": "bots/always_call_bot.py"},
+            {"name": "Cautious_bot", "path": "bots/cautious_bot.py"},
+            {"name": "Probability_based_bot", "path": "bots/probability_based_bot.py"},
+            {"name": "Random_bot", "path": "bots/random_bot.py"}
+        ]
+
+        test_bots = []
+        for bot_info in predefined_bots_info:
+            try:
+                bot, _ = TestBot.objects.get_or_create(
+                    user=user,
+                    name=bot_info['name'],
+                    defaults={'file': bot_info['path']}
+                )
+                test_bots.append(bot)
+            except Exception as e:
+                messages.error(request, f"Error loading predefined bot {bot_info['name']}: {str(e)}")
+                return redirect('/deploy_bot/')
+
+        all_bots = [new_test_bot] + test_bots
+        bot_paths = [bot.file.path for bot in all_bots]
+        try:
+            match_result, rounds_data = play_match(bot_paths, all_bots)
+        except Exception as e:
+            messages.error(request, f"Error executing match: {str(e)}")
+            return redirect('/deploy_bot/')
+
+        if isinstance(match_result, str) and match_result.startswith("Invalid"):
+            messages.error(request, f"Match error: {match_result}")
+            return redirect('/deploy_bot/')
+
+        # Create match record
+        try:
+            test_match = TestMatch.objects.create(
+                winner=match_result,
+                rounds_data=rounds_data
+            )
+            test_match.players.set([new_test_bot] + test_bots)
+        except Exception as e:
+            messages.error(request, f"Error saving match results: {str(e)}")
+            return redirect('/deploy_bot/')
+
+        # Prepare results
+        results = {
+            'match_id': test_match.id,
+            'opponents': [bot.name for bot in test_bots],
+            'winner': match_result,
+            'rounds_data': rounds_data
+        }
+
+        return render(request, 'test_run_Response.html', {
+            'results': results,
+            'testbot': new_test_bot
+        })
+
+    except Exception as e:
+        messages.error(request, f"Unexpected error occurred: {str(e)}")
         return redirect('/deploy_bot/')
-
-    new_test_bot = TestBot.objects.create(user=user, name=bot_name, file=bot_file)
-
-    predefined_bots_info = [
-        {"name": "Aggressive", "path": "bots/aggressive_bot.py"},
-        {"name": "Always_Call", "path": "bots/always_call_bot.py"},
-        {"name": "Cautious_bot", "path": "bots/cautious_bot.py"},
-        {"name": "Probability_based_bot", "path": "bots/probability_based_bot.py"},
-        {"name": "Random_bot", "path": "bots/random_bot.py"}
-    ]
-
-    test_bots = []
-    for bot_info in predefined_bots_info:
-        bot, _ = TestBot.objects.get_or_create(
-            user=user,
-            name=bot_info['name'],
-            defaults={'file': bot_info['path']}
-        )
-        test_bots.append(bot)
-
-    all_bots = [new_test_bot] + test_bots
-    bot_paths = [bot.file.path for bot in all_bots]
-
-    match_result, rounds_data = play_match(bot_paths, all_bots)
-
-    if isinstance(match_result, str) and match_result.startswith("Invalid"):
-        return JsonResponse({"error": match_result})
-
-
-    test_match = TestMatch.objects.create(
-        winner=match_result,
-        rounds_data=rounds_data
-    )
-    test_match.players.set([new_test_bot] + test_bots)
     
-    results = {
-        'match_id': test_match.id,
-        'opponents': [bot.name for bot in test_bots],
-        'winner': match_result,
-        'rounds_data': rounds_data
-    }
-
-    return render(request, 'test_run_Response.html', {
-        'results': results,
-        'testbot': new_test_bot
-    })
-
 @login_required
 def test_replay(request, match_id):
     match = get_object_or_404(TestMatch,id=match_id)
@@ -200,30 +239,70 @@ def test_replay(request, match_id):
         'bot_id': match.bot1.id
     })
 
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+
 def test_match_results(request, match_id):
-    # Fetch the bot instance
-    match=get_object_or_404(TestMatch,id=match_id)
-    testbot = match.players.filter(user=request.user).first()
-    # Collect match results
-    results = []
-    # Get the opponent(s) for the match
-    opponents = [player.name for player in match.players.all() if player.id != testbot.id]
-    results.append({
-        'match': match,
-        'opponents': opponents,  # List of opponent names
-        'winner': match.winner,
-        'played_at': match.played_at,
-        'rounds_data': match.rounds_data,
-    })
+    try:
+        # Get match with error handling for invalid ID
+        match = get_object_or_404(TestMatch, id=match_id)
+        
+        # Get user's bot in the match with permission check
+        testbot = match.players.filter(user=request.user).first()
+        if not testbot:
+            messages.error(request, "You don't have permission to view this match")
+            return redirect('home')  # Redirect to appropriate page
 
-    # Prepare the context
-    context = {
-        'testbot': testbot,
-        'results': results,
-    }
+        # Validate match data integrity
+        if not all(hasattr(match, attr) for attr in ['winner', 'played_at', 'rounds_data']):
+            messages.error(request, "Invalid match data structure")
+            return redirect('home')
 
-    # Render the template
-    return render(request, 'test_run_Response2.html', context)
+        # Safely prepare opponents list
+        try:
+            opponents = [player.name for player in match.players.all() if player.id != testbot.id]
+        except AttributeError as e:
+            messages.error(request, f"Error processing player data: {str(e)}")
+            return redirect('home')
+
+        # Validate rounds data format
+        if not isinstance(match.rounds_data, list):
+            messages.error(request, "Invalid round data format")
+            return redirect('home')
+
+        # Prepare results with error handling
+        try:
+            results = [{
+                'match': match,
+                'opponents': opponents,
+                'winner': match.winner,
+                'played_at': match.played_at,
+                'rounds_data': match.rounds_data,
+            }]
+        except KeyError as e:
+            messages.error(request, f"Missing key in match data: {str(e)}")
+            return redirect('home')
+
+        context = {
+            'testbot': testbot,
+            'results': results,
+        }
+
+        return render(request, 'test_run_Response2.html', context)
+
+    except PermissionDenied:
+        messages.error(request, "You don't have permission to access this resource")
+        return redirect('login')
+        
+    except ObjectDoesNotExist as e:
+        messages.error(request, "Requested resource no longer exists")
+        return redirect('home')
+        
+    except Exception as e:
+        # Log the exception here (consider adding logging)
+        messages.error(request, "An unexpected error occurred")
+        return redirect('home')
 
 
 @login_required
