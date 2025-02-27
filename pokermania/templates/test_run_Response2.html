@@ -20,15 +20,15 @@
                 <h2>Test Result:</h2>
                 <div class="results-container">
                     <div class="game-result">
-                        <h3>Game Against: {{ results.opponents|join:", " }}</h3>  <!-- Lists all opponent bot names -->
+                        <h3>Game Against: {{ results.0.opponents|join:", " }}</h3>  <!-- Lists all opponent bot names -->
 
                         <div class="game-details">
-                            <p><strong>Winner:</strong> {{ results.winner }}</p>
+                            <p><strong>Winner:</strong> {{ results.0.winner }}</p>
                         </div>
 
                         <!-- Round Buttons -->
                         <div class="round-buttons">
-                            <form method="GET" action="{% url 'test_replay' results.match_id %}" style="display:inline;">
+                            <form method="GET" action="{% url 'test_replay' results.0.match.id %}" style="display:inline;">
                                 <input type="hidden" name="round_index" value="0">
                                 <button type="submit" class="btn btn-primary">
                                     Replay Game
