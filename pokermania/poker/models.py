@@ -79,6 +79,7 @@ class TestMatch(models.Model):
         TestBot,
         related_name='matches_as_players'  # Unique name
     )
+    player_order = models.JSONField(default=list)  # Store order explicitly
     winner = models.TextField()
     played_at = models.DateTimeField(auto_now_add=True)
     rounds_data = models.JSONField(max_length=100000)

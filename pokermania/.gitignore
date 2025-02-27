@@ -14,5 +14,5 @@ test.py
 # static/
 media/
 
-static/bots
+bots/
 test_bots/

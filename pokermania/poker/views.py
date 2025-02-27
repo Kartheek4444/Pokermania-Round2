@@ -1,17 +1,12 @@
 import traceback
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
+from django.shortcuts import render, redirect ,get_object_or_404
 from django.db import transaction
-from django.core.exceptions import ValidationError
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-import re, os, json
-from pypokerengine.api.game import setup_config
+from django.core.exceptions import ValidationError, PermissionDenied, ObjectDoesNotExist
+import re
 from .models import Bot, Match, TestBot, TestMatch
 from .utils import play_match
 
@@ -110,11 +105,7 @@ def upload_bot(request):
     user = request.user
     bot_name = request.POST.get('bot_name')
     bot_file_path = request.POST.get('bot_file_path')
-    print("\n=== Debugging: Upload Bot ===")
-    print(f"User: {user.username}")
-    print(f"Bot Name: {bot_name}")
-    print(f"Bot File Path: {bot_file_path}")
-    if Bot.objects.filter(user=user).count()>10:
+    if Bot.objects.filter(user=user).count()>20:
         messages.error(request, "You can only upload 10 bot.")
         return redirect('deploy_bot') 
 
@@ -152,7 +143,7 @@ def test_run(request):
             return redirect('/deploy_bot/')
 
         # Check for existing bot names
-        if TestBot.objects.filter(name=bot_name).exists():
+        if Bot.objects.filter(name=bot_name).exists():
             messages.info(request, "Bot name already taken!")
             return redirect('/deploy_bot/')
 
@@ -200,12 +191,12 @@ def test_run(request):
         if isinstance(match_result, str) and match_result.startswith("Invalid"):
             messages.error(request, f"Match error: {match_result}")
             return redirect('/deploy_bot/')
-
         # Create match record
         try:
             test_match = TestMatch.objects.create(
                 winner=match_result,
-                rounds_data=rounds_data
+                rounds_data=rounds_data,
+                player_order=[bot.id for bot in all_bots]
             )
             test_match.players.set([new_test_bot] + test_bots)
         except Exception as e:
@@ -231,18 +222,17 @@ def test_run(request):
     
 @login_required
 def test_replay(request, match_id):
-    match = get_object_or_404(TestMatch,id=match_id)
-    players = [bot.name for bot in match.players.all()]
-    return render(request, 'test_multigame.html',{
+    match = get_object_or_404(TestMatch, id=match_id)
+    ordered_players = [TestBot.objects.get(id=bot_id).name for bot_id in match.player_order]
+    
+    return render(request, 'test_multigame.html', {
         'rounds_data': match.rounds_data,
-        'players': players,
-        'match':match,
+        'players': ordered_players,  # Correct order
+        'match': match,
         'bot_id': match.bot1.id
     })
 
-from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+
 
 def test_match_results(request, match_id):
     try:
@@ -266,7 +256,7 @@ def test_match_results(request, match_id):
         except AttributeError as e:
             messages.error(request, f"Error processing player data: {str(e)}")
             return redirect('deploy_bot')
-
+        
         # Validate rounds data format
         if not isinstance(match.rounds_data, list):
             messages.error(request, "Invalid round data format")

@@ -1,16 +1,8 @@
-from calendar import c
 import sys
 import io
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-import os
 from pypokerengine.api.game import setup_config, start_poker
 import importlib.util
-import json
 import re
-from .models import Bot, Match, TestBot
-
 
 def load_bot(filepath,bot_name=None):
     try:
@@ -66,15 +58,7 @@ def parse_poker_output_to_json(content):
                 name, action, amount = action_match.groups()
 
                 if not amount.isdigit():
-                    return "Invalid amount"
-                
-                amount = int(amount)
-
-                if amount <= 0:
-                    if amount == 0 and (action == "call" or action == "fold"):
-                        pass
-                    else:
-                        return "Invalid amount", amount
+                    return "Invalid amount" , {amount , action , name}
         
                 current_round["actions"][current_street].append({"name": name, "action": action, "amount": int(amount)})
                 continue
@@ -91,7 +75,7 @@ def parse_poker_output_to_json(content):
     if current_round:
         rounds.append(current_round)
 
-    return {"rounds": rounds}
+    return {"rounds": rounds} , None
 
 
 def play_match(bot_paths, bots):
@@ -119,10 +103,11 @@ def play_match(bot_paths, bots):
     result, success = redirect_stdout_to_file(config, output_file)
 
     # Read and parse the output file
-    replay_data= read_output_file_and_parse(output_file)
+    replay_data,error= read_output_file_and_parse(output_file)
 
     if replay_data == "Invalid amount":
-        return "Invalid Action or Amount check ur code",None
+        
+        return f"Invalid Action({error[0]}) with Amount({error[1]}) check ur code player {str(error[2])}",None
     # Break down the replay data into individual rounds
 
     for round_num in range(len(replay_data["rounds"])):

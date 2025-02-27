@@ -15,7 +15,7 @@
     <div class="game-table">
         {% for player in players %}
         <div class="player{{ forloop.counter }}">
-            <h2>{{ player }}</h2>
+			<h2>{{ player|slice:":9" }}</h2>
             <div class="balance" id="player{{ forloop.counter }}-balance">$100</div>
             <div class="cards-container">
                 <div class="player-cards">
@@ -102,9 +102,11 @@
     ];
     const roundsData = {{ rounds_data|safe }}; 
     const playerNames = {{ players|safe }};
+	console.log(roundsData.length);
     // console.log(roundsData);
 	// console.log(playerNames);
 	let playerCount = playerNames.length;
+	let numPlayerIn = playerCount;
     let currentRoundIndex = 0;
 	let playerBalances = new Array(playerCount).fill(10000);
 	let prevRoundBalances = new Array(playerCount).fill(10000);
@@ -127,75 +129,89 @@
     }
 	resetUI();
 
-    function updateBalancesForRound(roundIndex){
-        // Reset balances to the starting value at the start of the first round
-        if(roundIndex === 0) {
-			if(playerCount===2){
-				playerBalances[1]=9750;
-				playerBalances[0]=9500;
-				playerBets[1]=250;
-				playerBets[0]=500;
+    // Track the last small blind (initialize before the first round)
+	let lastButton = -1;  // Set to -1 so that the first round starts fresh
+
+	function updateBalancesForRound(roundIndex) {
+		// Reset balances to the starting value at the start of the first round
+		if (roundIndex === 0) {
+			if (playerCount === 2) {
+				playerBalances[1] = 9750;
+				playerBalances[0] = 9500;
+				playerBets[1] = 250;
+				playerBets[0] = 500;
+				lastButton = 1; // Set first small blind
 				return;
 			}
-            playerBalances[1]=9750;
-			playerBalances[2]=9500;
-			playerBets[1]=250;
-			playerBets[2]=500;
-        }
-        else{
-            const round = roundsData[roundIndex - 1];
-
+			playerBalances[1] = 9750;
+			playerBalances[2] = 9500;
+			playerBets[1] = 250;
+			playerBets[2] = 500;
+			lastButton = 0; // Set first small blind
+		} else {
+			const round = roundsData[roundIndex - 1];
 			const winner = round.winner;
 
 			console.log(winner);
-			
-			if(winner!=="No one"){
+
+			if (winner !== "No one") {
 				let winnerIndex = playerNames.findIndex(player => player === winner);
 				playerBalances[winnerIndex] += round.chips_exchanged;
 			}
 
-			for(let i=0; i<playerCount; i++){
-				if(playerInGame[i] && playerBalances[i]===0){
-					playerInGame[i]=false;
+			for (let i = 0; i < playerCount; i++) {
+				if (playerInGame[i] && playerBalances[i] === 0) {
+					playerInGame[i] = false;
+					numPlayerIn--;
 					playerBetsElements[i].classList.add('hidden');
 				}
 			}
-			console.log(playerBalances);
 
 			prevRoundBalances = playerBalances.slice();
+			
+			let button = (lastButton + 1) % playerNames.length;
 
-			let smallBlind = (roundIndex+1)%playerNames.length;
+			while(!playerInGame[button]){
+				button = (button + 1) % playerCount;
+			}
+			// Move small blind forward by 1 position from the last small blind
+			let smallBlind = (button + 1) % playerNames.length;
 			while (!playerInGame[smallBlind]) {
 				smallBlind = (smallBlind + 1) % playerNames.length;
 			}
-			let bigBlind = (smallBlind+1)%playerNames.length;
+
+			// Set lastButton for the next round
+			lastButton = button;
+
+			// Find the next big blind
+			let bigBlind = (smallBlind + 1) % playerNames.length;
 			while (!playerInGame[bigBlind]) {
 				bigBlind = (bigBlind + 1) % playerNames.length;
 			}
 
-			if(playerBalances[smallBlind]>=250){
-				playerBalances[smallBlind]-=250;
-				playerBets[smallBlind]=250;
-			}
-			else{
-				playerBets[smallBlind]=playerBalances[smallBlind];
-				playerBalances[smallBlind]=0;
+			// Deduct blinds
+			if (playerBalances[smallBlind] >= 250) {
+				playerBalances[smallBlind] -= 250;
+				playerBets[smallBlind] = 250;
+			} else {
+				playerBets[smallBlind] = playerBalances[smallBlind];
+				playerBalances[smallBlind] = 0;
 			}
 
-			if(playerBalances[bigBlind]>=500){
-				playerBalances[bigBlind]-=500;
-				playerBets[bigBlind]=500;
+			if (playerBalances[bigBlind] >= 500) {
+				playerBalances[bigBlind] -= 500;
+				playerBets[bigBlind] = 500;
+			} else {
+				playerBets[bigBlind] = playerBalances[bigBlind];
+				playerBalances[bigBlind] = 0;
 			}
-			else{
-				playerBets[bigBlind]=playerBalances[bigBlind];
-				playerBalances[bigBlind]=0;
-			}
-			
+
+			// Update UI
 			for (let i = 0; i < playerCount; i++) {
-				document.getElementById(`player${i+1}-balance`).textContent = `$${playerBalances[i]}`;
+				document.getElementById(`player${i + 1}-balance`).textContent = `$${playerBalances[i]}`;
 			}
-        }
-    }
+		}
+	}
     
 	function getCardImage(cardName) {
 		const card = cards.find(c => c.name === cardName);
@@ -262,17 +278,15 @@
 	function updateUI(){
 		resetUI();
 		const round=roundsData[currentRoundIndex];
-		// console.log(round)
 		document.getElementById('current-round').textContent = `Round ${currentRoundIndex+1}`;
 		const holecards = round.hole_cards;
-        // console.log(holecards)
 		const communitycards = round.communitycards;
 		const actions = round.actions;
+		const streets = round.street;
 		let playerInRound = playerInGame.slice();
-		let numPlayerIn = playerCount;
 
 		updateBalancesForRound(currentRoundIndex);
-
+		let numPlayerInRound = numPlayerIn;
 		// console.log(playerInGame);
 
 		function setPlayerCards() {
@@ -308,24 +322,28 @@
         potElement.textContent = `Pot: $${pot}`;
 
         window.nextStep = function nextStep(){
-            const streets = ["preflop", "flop", "turn", "river"];
             const street = streets[currentStreet];
             const streetActions = actions[street];
 
 			for(let i=0; i<playerCount; i++) {
 				playerActionsElements[i].classList.add('hidden');
 			}
-            console.log(streetActions.name.length);
-            if (actionIndex < streetActions.name.length) {
+
+			if (currentStreet<streets.length && actionIndex < streetActions.name.length) {
                 const playerName = streetActions.name[actionIndex];
 				const playerIndex=playerNames.findIndex(player => player === playerName)
-                const playerAction = streetActions.action[actionIndex];
+                let playerAction = streetActions.action[actionIndex];
                 const actionAmount = streetActions.amount[actionIndex];
-                const formattedAction = playerAction.charAt(0).toUpperCase() + playerAction.slice(1);
+                let formattedAction = playerAction.charAt(0).toUpperCase() + playerAction.slice(1);
+
+				if(actionAmount<=playerBets[(playerIndex-1+numPlayerInRound)%numPlayerInRound]&&playerAction==="raise"){
+					playerAction="fold";
+					formattedAction="Fold";
+				}
 
                 if(playerAction === "fold"){
                     playerInRound[playerIndex]=false;
-					if(--numPlayerIn===1) done=true;
+					if(--numPlayerInRound===1) done=true;
 					playerActionsElements[playerIndex].textContent = `${formattedAction}`;
 					playerActionsElements[playerIndex].classList.remove('hidden');
 					setCardImage(`player${playerIndex+1}-card-1`, "{% static 'images/cards/card_back.jpg' %}");
@@ -337,6 +355,18 @@
 				let betDifference = actionAmount - playerBets[playerIndex];
 				playerBets[playerIndex] = actionAmount;
 				if(betDifference>playerBalances[playerIndex]){
+					if(playerAction=="raise"){
+						playerAction="fold";
+						formattedAction="Fold";
+						playerInRound[playerIndex]=false;
+						if(--numPlayerInRound===1) done=true;
+						playerActionsElements[playerIndex].textContent = `${formattedAction}`;
+						playerActionsElements[playerIndex].classList.remove('hidden');
+						setCardImage(`player${playerIndex+1}-card-1`, "{% static 'images/cards/card_back.jpg' %}");
+						setCardImage(`player${playerIndex+1}-card-2`, "{% static 'images/cards/card_back.jpg' %}");
+						actionIndex++;
+						return;
+					}
 					betDifference=playerBalances[playerIndex];
 					playerBets[playerIndex] = playerBalances[playerIndex];
 				}
@@ -347,7 +377,6 @@
 				playerActionsElements[playerIndex].classList.remove("hidden");
 
                 actionIndex++;
-                console.log(actionIndex);
             }
             else if(!done){
 				for(let i=0; i<playerCount; i++){
@@ -355,13 +384,13 @@
 					playerBets[i]=0;
 					playerBetsElements[i].textContent = `$${0}`;
 				}
+
 				potElement.textContent = `Pot: $${pot}`;
 				actionIndex = 0;
 
-				if (currentStreet < streets.length - 1) {
+				if (currentStreet < streets.length) {
 					currentStreet++;
 					if (currentStreet === 1) {
-                        console.log(communitycards[currentStreet]);
 						setCardImage("community-card-1", getCardImage(communitycards["flop"][0]));
 						setCardImage("community-card-2", getCardImage(communitycards["flop"][1]));
 						setCardImage("community-card-3", getCardImage(communitycards["flop"][2]));
@@ -375,12 +404,14 @@
             }
             else{
 				// console.log("Game Over");
+				for(let i=0; i<playerCount; i++){
+					playerBets[i]=0;
+					playerBetsElements[i].textContent = `$${0}`;
+				}
                 dimPage();
                 showResults(holecards, communitycards[street]);
             }
         }
-
-
 
 
         function showResults(holecards, communityCards) {
@@ -443,6 +474,17 @@
 			
 			let winnerHTML = `<strong">${winner}</strong> wins <strong style="color: #00ff00;">${chips_exchanged}</strong> from the pot!`;
 
+			let cardIndex = 0;
+			let playerRows = playerNames.map((player, index) => 
+				playerInGame[index] ? `
+					<tr>
+						<td style="padding: 5px;">${player}</td>
+						<td style="padding: 5px;">${playersCardsHTML[cardIndex++]}</td>
+						<td style="padding: 5px;">${getChipsHTML(player)}</td>
+					</tr>
+				` : ''
+			).join('');
+
 			let resultsHTML = `
 				<h2 style="color: white;">Round Complete!</h2>
 				<div style="color: yellow;">${winnerHTML}</div>
@@ -460,19 +502,13 @@
 						</tr>
 					</thead>
 					<tbody>
-						${playerNames.map((player, index) => `
-							<tr>
-								<td style="padding: 5px;">${player}</td>
-								<td style="padding: 5px;">${playersCardsHTML[index]}</td>
-								<td style="padding: 5px;">${getChipsHTML(player)}</td>
-							</tr>
-						`).join('')}
+						${playerRows}
 					</tbody>
 				</table>
 				<br>
-                <button onclick="closeResults()" style="background-color: #ffcc00; padding: 10px 20px; color: #1f2937; border: none; font-size: 18px; cursor: pointer;">
-                    Done
-                </button>
+				<button onclick="closeResults()" style="background-color: #ffcc00; padding: 10px 20px; color: #1f2937; border: none; font-size: 18px; cursor: pointer;">
+					Done
+				</button>
 			`;
 
 			resultsDiv.innerHTML = resultsHTML;
