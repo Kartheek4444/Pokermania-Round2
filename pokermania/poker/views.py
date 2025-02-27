@@ -106,9 +106,12 @@ def upload_bot(request):
     user = request.user
     bot_name = request.POST.get('bot_name')
     bot_file_path = request.POST.get('bot_file_path')
-
-    if Bot.objects.filter(user=user).count()>1:
-        messages.error(request, "You can only upload 1 bot.")
+    print("\n=== Debugging: Upload Bot ===")
+    print(f"User: {user.username}")
+    print(f"Bot Name: {bot_name}")
+    print(f"Bot File Path: {bot_file_path}")
+    if Bot.objects.filter(user=user).count()>10:
+        messages.error(request, "You can only upload 10 bot.")
         return redirect('deploy_bot') 
 
     try:
@@ -128,8 +131,7 @@ def upload_bot(request):
         messages.error(request, "An error occurred while uploading the bot.")
         return redirect('deploy_bot')
 
-    return redirect('')
-
+    return redirect('home')
 
 @login_required
 def test_run(request):
@@ -137,115 +139,98 @@ def test_run(request):
     bot_name = request.POST.get('name')
     bot_file = request.FILES['file']
 
-
     if Bot.objects.filter(name=bot_name).exists():
         messages.info(request, "BotName already taken!")
         return redirect('/deploy_bot/')
 
-
-    # Create a test bot
     new_test_bot = TestBot.objects.create(user=user, name=bot_name, file=bot_file)
 
-    # Predefined test bots
-    test_bots_info = [
-        {"name": "Always_call_bot", "path": "bots/always_call_bot.py"},
-        {"name": "Aggressive_bot", "path": "bots/aggressive_bot.py"},
+    predefined_bots_info = [
+        {"name": "Aggressive", "path": "bots/aggressive_bot.py"},
+        {"name": "Always_Call", "path": "bots/always_call_bot.py"},
         {"name": "Cautious_bot", "path": "bots/cautious_bot.py"},
         {"name": "Probability_based_bot", "path": "bots/probability_based_bot.py"},
         {"name": "Random_bot", "path": "bots/random_bot.py"}
     ]
 
-    results = []
-
-    for bot_info in test_bots_info:
-        # No interaction with regular bots
-        opponent_bot, _ = TestBot.objects.get_or_create(
-            user=request.user,  # Associate with the user for better tracking
+    test_bots = []
+    for bot_info in predefined_bots_info:
+        bot, _ = TestBot.objects.get_or_create(
+            user=user,
             name=bot_info['name'],
             defaults={'file': bot_info['path']}
         )
+        test_bots.append(bot)
 
-        # Simulate a match between the test bot and the predefined test bot
-        winner, chips_exchanged, rounds_data, win_counts = play_match(
-            new_test_bot.file.path,
-            opponent_bot.file.path,
-            new_test_bot,
-            opponent_bot
-        )
+    all_bots = [new_test_bot] + test_bots
+    bot_paths = [bot.file.path for bot in all_bots]
 
-        if(win_counts==None):
-            return JsonResponse({"Error":winner,"Error":chips_exchanged})
-        
-        # Log results in TestMatch model
-        test_match=TestMatch.objects.create(
-            bot1=new_test_bot,
+    match_result, rounds_data = play_match(bot_paths, all_bots)
 
-            opponent_name=opponent_bot.name,
-            winner=winner,
-            total_chips_exchanged=chips_exchanged,
-            test_bot_wins=win_counts[0],
-            opponent_wins=win_counts[1],
-            rounds_data=rounds_data
-        )
+    if isinstance(match_result, str) and match_result.startswith("Invalid"):
+        return JsonResponse({"error": match_result})
 
-        results.append({
-            'match_id': test_match.id,
-            'opponent_name': opponent_bot.name,
-            'winner': winner,
-            'chips_exchanged': chips_exchanged,
-            'bot_wins': win_counts[0],
-            'opponent_wins': win_counts[1],
-            'rounds_data': rounds_data
-        })
 
-    return render(request, 'test_run_response.html', {
+    test_match = TestMatch.objects.create(
+        winner=match_result,
+        rounds_data=rounds_data
+    )
+    test_match.players.set([new_test_bot] + test_bots)
+    
+    results = {
+        'match_id': test_match.id,
+        'opponents': [bot.name for bot in test_bots],
+        'winner': match_result,
+        'rounds_data': rounds_data
+    }
+
+    return render(request, 'test_run_Response.html', {
         'results': results,
         'testbot': new_test_bot
     })
 
 @login_required
 def test_replay(request, match_id):
-    match = TestMatch.objects.get(id=match_id)
-
-    if match.bot1.user != request.user:
-        return redirect('/test_run/')
-
-    player = "L" if match.bot1.user == request.user else "R"
-
-    return render(request, 'testgame.html', {
-        'bot_name':match.bot1.name,
-        'player_name':match.opponent_name,
-        'match': match,
-        'player': player,
+    match = get_object_or_404(TestMatch,id=match_id)
+    players = [bot.name for bot in match.players.all()]
+    return render(request, 'test_multigame.html',{
         'rounds_data': match.rounds_data,
+        'players': players,
+        'match':match,
+        'bot_id': match.bot1.id
     })
 
-def test_match_results(request, bot_id):
-    bot_instance = get_object_or_404(TestBot, id=bot_id)
+def test_match_results(request, match_id):
+    # Fetch the bot instance
+    match=get_object_or_404(TestMatch,id=match_id)
+    bot_instance = match.bot1
 
-    matches = TestMatch.objects.filter(
-        Q(bot1_id=bot_instance.id)
-    ).order_by('-played_at')  
+    # Fetch matches involving the bot
+    # matches = TestMatch.objects.filter(
+    #     players=bot_instance  # Filter matches where the bot is one of the players
+    # ).order_by('-played_at')
 
     # Collect match results
     results = []
-    for match in matches:
-        results.append({
-            'match_id': match.id,
-            'opponent_name': match.opponent_name,
-            'winner': match.winner,
-            'chips_exchanged': match.total_chips_exchanged,
-            'bot_wins': match.test_bot_wins,
-            'opponent_wins': match.opponent_wins,
-            'played_at': match.played_at,
-            'rounds_data': match.rounds_data,
-        })
+    # Get the opponent(s) for the match
+    opponents = [player.name for player in match.players.all() if player.id != bot_instance.id]
+    results.append({
+        'match': match,
+        'opponents': opponents,  # List of opponent names
+        'winner': match.winner,
+        'played_at': match.played_at,
+        'rounds_data': match.rounds_data,
+    })
 
+    # Prepare the context
     context = {
         'testbot': bot_instance,
         'results': results,
     }
-    return render(request, 'test_run_Response.html', context)
+
+    # Render the template
+    return render(request, 'test_run_Response2.html', context)
+
 
 @login_required
 def admin_panel(request):

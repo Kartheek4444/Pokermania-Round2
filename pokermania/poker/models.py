@@ -37,7 +37,7 @@ class Bot(models.Model):
 
 class Match(models.Model):
     id = models.AutoField(primary_key=True)
-    players = models.ManyToManyField(Bot, related_name="matches")  # Multiple bots per match
+    players = models.ManyToManyField(Bot, related_name="matches") 
     winner = models.TextField()
     played_at = models.DateTimeField(auto_now_add=True)
     rounds_data = models.JSONField(max_length=100000)
@@ -54,7 +54,7 @@ class Match(models.Model):
 class TestBot(models.Model):
     user = models.ForeignKey('poker.User', on_delete=models.CASCADE)
     name = models.TextField()
-    file = models.FileField(upload_to='test_bots/')  # Changed upload_to for better organization
+    file = models.FileField(upload_to='test_bots/') 
     created_at = models.DateTimeField(auto_now_add=True)
     chips_won = models.IntegerField(default=0)
     wins = models.IntegerField(default=0)
@@ -68,14 +68,18 @@ class TestBot(models.Model):
 
 
 class TestMatch(models.Model):
-    """New model to store test match results"""
-    id = models.AutoField(primary_key=True)  # Changed from game_id to id for consistency
-    bot1 = models.ForeignKey(TestBot, related_name='test_matches', on_delete=models.CASCADE)
-    opponent_name = models.TextField()
+    id = models.AutoField(primary_key=True)
+    bot1 = models.ForeignKey(
+        TestBot,
+        related_name='matches_as_bot1',  # Unique name
+        on_delete=models.CASCADE,
+        default =1
+    )
+    players = models.ManyToManyField(
+        TestBot,
+        related_name='matches_as_players'  # Unique name
+    )
     winner = models.TextField()
-    total_chips_exchanged = models.IntegerField()
-    test_bot_wins = models.IntegerField()
-    opponent_wins = models.IntegerField()
     played_at = models.DateTimeField(auto_now_add=True)
     rounds_data = models.JSONField(max_length=100000)
 
@@ -83,5 +87,5 @@ class TestMatch(models.Model):
         ordering = ['-played_at']
 
     def __str__(self):
-        return f"Test Match: {self.bot1.name} vs {self.opponent_name}"
+        return f"Test Match: {self.bot1.name} vs {self.players.count() - 1} opponents"
 

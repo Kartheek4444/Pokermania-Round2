@@ -1,0 +1,492 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Game Replay{% endblock %}
+
+{% block extra_css %}
+	<link rel="stylesheet" href="{% static 'css/gamestyles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+	<div class="round-navigation">
+        <span id="current-round">Round 1</span>
+    </div>
+    <div class="game-table">
+        {% for player in players %}
+        <div class="player{{ forloop.counter }}">
+            <h2>{{ player }}</h2>
+            <div class="balance" id="player{{ forloop.counter }}-balance">$100</div>
+            <div class="cards-container">
+                <div class="player-cards">
+                    <div class="card-slot" id="player{{ forloop.counter }}-card-1"></div>
+                    <div class="card-slot" id="player{{ forloop.counter }}-card-2"></div>
+                </div>
+                <div class="bet" id="player{{ forloop.counter }}-bet">$20</div>
+            </div>
+			<div class="actions" id="player{{ forloop.counter }}-actions"></div>
+        </div>
+        {% endfor %}
+
+        <div class="center-area">
+            <div class="card-pack"></div>
+            <div class="community-cards-container">
+                <div class="community-cards">
+                    {% for i in "12345" %}
+                    <div class="card-slot" id="community-card-{{ i }}"></div>
+                    {% endfor %}
+                </div>
+                <div class="next-button">
+                    <button onclick="nextStep()">Next</button>
+                </div>
+            </div>
+            <div class="pot" id="pot">Pot: ${{ pot }}</div>
+        </div>
+    </div>
+</div>
+
+<script>
+	const cards = [
+        { name: "SA", image: "{% static 'images/cards/ace_of_spades.png' %}" },
+        { name: "SK", image: "{% static 'images/cards/king_of_spades.png' %}" },
+        { name: "SQ", image: "{% static 'images/cards/queen_of_spades.png' %}" },
+        { name: "SJ", image: "{% static 'images/cards/jack_of_spades.png' %}" },
+        { name: "ST", image: "{% static 'images/cards/10_of_spades.png' %}" },
+        { name: "S9", image: "{% static 'images/cards/9_of_spades.png' %}" },
+        { name: "S8", image: "{% static 'images/cards/8_of_spades.png' %}" },
+        { name: "S7", image: "{% static 'images/cards/7_of_spades.png' %}" },
+        { name: "S6", image: "{% static 'images/cards/6_of_spades.png' %}" },
+        { name: "S5", image: "{% static 'images/cards/5_of_spades.png' %}" },
+        { name: "S4", image: "{% static 'images/cards/4_of_spades.png' %}" },
+        { name: "S3", image: "{% static 'images/cards/3_of_spades.png' %}" },
+        { name: "S2", image: "{% static 'images/cards/2_of_spades.png' %}" },
+        { name: "HA", image: "{% static 'images/cards/ace_of_hearts.png' %}" },
+        { name: "HK", image: "{% static 'images/cards/king_of_hearts.png' %}" },
+        { name: "HQ", image: "{% static 'images/cards/queen_of_hearts.png' %}" },
+        { name: "HJ", image: "{% static 'images/cards/jack_of_hearts.png' %}" },
+        { name: "HT", image: "{% static 'images/cards/10_of_hearts.png' %}" },
+        { name: "H9", image: "{% static 'images/cards/9_of_hearts.png' %}" },
+        { name: "H8", image: "{% static 'images/cards/8_of_hearts.png' %}" },
+        { name: "H7", image: "{% static 'images/cards/7_of_hearts.png' %}" },
+        { name: "H6", image: "{% static 'images/cards/6_of_hearts.png' %}" },
+        { name: "H5", image: "{% static 'images/cards/5_of_hearts.png' %}" },
+        { name: "H4", image: "{% static 'images/cards/4_of_hearts.png' %}" },
+        { name: "H3", image: "{% static 'images/cards/3_of_hearts.png' %}" },
+        { name: "H2", image: "{% static 'images/cards/2_of_hearts.png' %}" },
+        { name: "DA", image: "{% static 'images/cards/ace_of_diamonds.png' %}" },
+        { name: "DK", image: "{% static 'images/cards/king_of_diamonds.png' %}" },
+        { name: "DQ", image: "{% static 'images/cards/queen_of_diamonds.png' %}" },
+        { name: "DJ", image: "{% static 'images/cards/jack_of_diamonds.png' %}" },
+        { name: "DT", image: "{% static 'images/cards/10_of_diamonds.png' %}" },
+        { name: "D9", image: "{% static 'images/cards/9_of_diamonds.png' %}" },
+        { name: "D8", image: "{% static 'images/cards/8_of_diamonds.png' %}" },
+        { name: "D7", image: "{% static 'images/cards/7_of_diamonds.png' %}" },
+        { name: "D6", image: "{% static 'images/cards/6_of_diamonds.png' %}" },
+        { name: "D5", image: "{% static 'images/cards/5_of_diamonds.png' %}" },
+        { name: "D4", image: "{% static 'images/cards/4_of_diamonds.png' %}" },
+        { name: "D3", image: "{% static 'images/cards/3_of_diamonds.png' %}" },
+        { name: "D2", image: "{% static 'images/cards/2_of_diamonds.png' %}" },
+        { name: "CA", image: "{% static 'images/cards/ace_of_clubs.png' %}" },
+        { name: "CK", image: "{% static 'images/cards/king_of_clubs.png' %}" },
+        { name: "CQ", image: "{% static 'images/cards/queen_of_clubs.png' %}" },
+        { name: "CJ", image: "{% static 'images/cards/jack_of_clubs.png' %}" },
+        { name: "CT", image: "{% static 'images/cards/10_of_clubs.png' %}" },
+        { name: "C9", image: "{% static 'images/cards/9_of_clubs.png' %}" },
+        { name: "C8", image: "{% static 'images/cards/8_of_clubs.png' %}" },
+        { name: "C7", image: "{% static 'images/cards/7_of_clubs.png' %}" },
+        { name: "C6", image: "{% static 'images/cards/6_of_clubs.png' %}" },
+        { name: "C5", image: "{% static 'images/cards/5_of_clubs.png' %}" },
+        { name: "C4", image: "{% static 'images/cards/4_of_clubs.png' %}" },
+        { name: "C3", image: "{% static 'images/cards/3_of_clubs.png' %}" },
+        { name: "C2", image: "{% static 'images/cards/2_of_clubs.png' %}" },
+    ];
+    const roundsData = {{ rounds_data|safe }}; 
+    const playerNames = {{ players|safe }};
+    console.log(roundsData);
+	console.log(playerNames);
+	let playerCount = playerNames.length;
+    let currentRoundIndex = 0;
+	let playerBalances = new Array(playerCount).fill(10000);
+	let prevRoundBalances = new Array(playerCount).fill(10000);
+    let playerBets = new Array(playerCount).fill(0);
+	let playerInGame = new Array(playerCount).fill(true);
+
+	function resetUI() {
+        document.getElementById('pot').textContent = 'Pot: $0';
+        document.getElementById('community-card-1').innerHTML = '';
+        document.getElementById('community-card-2').innerHTML = '';
+        document.getElementById('community-card-3').innerHTML = '';
+        document.getElementById('community-card-4').innerHTML = '';
+        document.getElementById('community-card-5').innerHTML = '';
+		for(let i=0; i<playerCount; i++){
+			document.getElementById(`player${i+1}-card-1`).innerHTML = '';
+			document.getElementById(`player${i+1}-card-2`).innerHTML = '';
+			document.getElementById(`player${i+1}-actions`).classList.add('hidden');
+			document.getElementById(`player${i+1}-bet`).textContent = `$${0}`;
+		}
+    }
+	resetUI();
+
+    function updateBalancesForRound(roundIndex){
+        // Reset balances to the starting value at the start of the first round
+        if(roundIndex === 0) {
+			if(playerCount===2){
+				playerBalances[1]=9750;
+				playerBalances[0]=9500;
+				playerBets[1]=250;
+				playerBets[0]=500;
+				return;
+			}
+            playerBalances[1]=9750;
+			playerBalances[2]=9500;
+			playerBets[1]=250;
+			playerBets[2]=500;
+        }
+        else{
+            const round = roundsData[roundIndex - 1];
+
+			const winner = round.winner;
+
+			console.log(winner);
+			
+			if(winner!=="No one"){
+				let winnerIndex = playerNames.findIndex(player => player === winner);
+				playerBalances[winnerIndex] += round.chips_exchanged;
+			}
+
+			for(let i=0; i<playerCount; i++){
+				if(playerInGame[i] && playerBalances[i]===0){
+					playerInGame[i]=false;
+					playerBetsElements[i].classList.add('hidden');
+				}
+			}
+			console.log(playerBalances);
+
+			prevRoundBalances = playerBalances.slice();
+
+			let smallBlind = (roundIndex+1)%playerNames.length;
+			while (!playerInGame[smallBlind]) {
+				smallBlind = (smallBlind + 1) % playerNames.length;
+			}
+			let bigBlind = (smallBlind+1)%playerNames.length;
+			while (!playerInGame[bigBlind]) {
+				bigBlind = (bigBlind + 1) % playerNames.length;
+			}
+
+			if(playerBalances[smallBlind]>=250){
+				playerBalances[smallBlind]-=250;
+				playerBets[smallBlind]=250;
+			}
+			else{
+				playerBets[smallBlind]=playerBalances[smallBlind];
+				playerBalances[smallBlind]=0;
+			}
+
+			if(playerBalances[bigBlind]>=500){
+				playerBalances[bigBlind]-=500;
+				playerBets[bigBlind]=500;
+			}
+			else{
+				playerBets[bigBlind]=playerBalances[bigBlind];
+				playerBalances[bigBlind]=0;
+			}
+			
+			for (let i = 0; i < playerCount; i++) {
+				document.getElementById(`player${i+1}-balance`).textContent = `$${playerBalances[i]}`;
+			}
+        }
+    }
+    
+	function getCardImage(cardName) {
+		const card = cards.find(c => c.name === cardName);
+		return card ? card.image : "{% static 'images/cards/card_back.jpg' %}";
+	}
+
+	function setCardImage(cardSlotId, cardImageSrc) {
+		const cardSlot = document.getElementById(cardSlotId);
+		if (cardSlot) {
+			const cardImage = document.createElement('img');
+			cardImage.src = cardImageSrc;
+			cardImage.alt = cardSlotId;
+			cardImage.style.width = "100%";
+			cardImage.style.height = "100%";
+			cardSlot.innerHTML = '';
+			cardSlot.appendChild(cardImage);
+		}
+	}
+
+	function closeResults() {
+		const overlay = document.getElementById('overlay');
+		const resultsDiv = document.getElementById('resultsDiv');
+
+		if (overlay) overlay.remove();
+		if (resultsDiv) resultsDiv.remove();
+		if (currentRoundIndex < roundsData.length - 1) {
+			nextRound()
+		}  else{
+            window.location.href = "{% url 'test_run_response2' match.id %}";
+        }
+	}
+
+	function dimPage() {
+		const existingOverlay = document.getElementById('overlay');
+		if (existingOverlay) {
+			existingOverlay.remove();
+		}
+		const overlay = document.createElement('div');
+		overlay.style.position = 'fixed';
+		overlay.style.top = '0';
+		overlay.style.left = '0';
+		overlay.style.width = '100%';
+		overlay.style.height = '100%';
+		overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+		overlay.style.zIndex = '9999';
+		overlay.id = 'overlay';
+		document.body.appendChild(overlay);
+	}
+
+	let pot = 0;
+	// Store references dynamically for all players
+	let playerBalanceElements = [];
+	let playerActionsElements = [];
+	let playerBetsElements = [];
+	const potElement = document.getElementById("pot");
+
+	// Loop through all players dynamically
+	for (let i = 0; i < playerCount; i++) {
+		playerBalanceElements[i] = document.getElementById(`player${i + 1}-balance`);
+		playerActionsElements[i] = document.getElementById(`player${i + 1}-actions`);
+		playerBetsElements[i] = document.getElementById(`player${i + 1}-bet`);
+	}
+
+	function updateUI(){
+		resetUI();
+		const round=roundsData[currentRoundIndex];
+		console.log(round)
+		document.getElementById('current-round').textContent = `Round ${currentRoundIndex+1}`;
+		const holecards = round.hole_cards;
+        console.log(holecards)
+		const communitycards = round.communitycards;
+		const actions = round.actions;
+		let playerInRound = playerInGame.slice();
+		let numPlayerIn = playerCount;
+
+		updateBalancesForRound(currentRoundIndex);
+
+		// console.log(playerInGame);
+
+		function setPlayerCards() {
+			let activeIndex=0;
+			for(let i=0; i<playerCount; i++){
+				if(!playerInGame[i]){
+					setCardImage(`player${i+1}-card-1`, "{% static 'images/cards/card_back.jpg' %}");
+					setCardImage(`player${i+1}-card-2`, "{% static 'images/cards/card_back.jpg' %}");
+					continue;
+				}
+				const player = playerNames[i];
+				const card1 = holecards[activeIndex][0];
+				const card2 = holecards[activeIndex][1];
+                console.log(card1,card2)
+				setCardImage(`player${i+1}-card-1`, getCardImage(card1));
+				setCardImage(`player${i+1}-card-2`, getCardImage(card2));
+				activeIndex++;
+			}
+        }
+        setPlayerCards();
+
+        let currentStreet = 0; // 0 = preflop, 1 = flop, 2 = turn, 3 = river
+        let actionIndex = 0; // Action index for the current street
+
+        pot=0;
+		let done=false;
+		for(let i=0; i<playerCount; i++){
+			playerActionsElements[i].classList.add('hidden');
+			playerBalanceElements[i].textContent = `$${playerBalances[i]}`;
+			if(playerInRound[i])	playerBetsElements[i].textContent = `$${playerBets[i]}`;
+			else playerBetsElements[i].classList.add('hidden');
+		}
+        potElement.textContent = `Pot: $${pot}`;
+
+        window.nextStep = function nextStep(){
+            const streets = ["preflop", "flop", "turn", "river"];
+            const street = streets[currentStreet];
+            const streetActions = actions[street];
+
+			for(let i=0; i<playerCount; i++) {
+				playerActionsElements[i].classList.add('hidden');
+			}
+            console.log(streetActions.name.length);
+            if (actionIndex < streetActions.name.length) {
+                const playerName = streetActions.name[actionIndex];
+				const playerIndex=playerNames.findIndex(player => player === playerName)
+                const playerAction = streetActions.action[actionIndex];
+                const actionAmount = streetActions.amount[actionIndex];
+                const formattedAction = playerAction.charAt(0).toUpperCase() + playerAction.slice(1);
+
+                if(playerAction === "fold"){
+                    playerInRound[playerIndex]=false;
+					if(--numPlayerIn===1) done=true;
+					playerActionsElements[playerIndex].textContent = `${formattedAction}`;
+					playerActionsElements[playerIndex].classList.remove('hidden');
+					setCardImage(`player${playerIndex+1}-card-1`, "{% static 'images/cards/card_back.jpg' %}");
+					setCardImage(`player${playerIndex+1}-card-2`, "{% static 'images/cards/card_back.jpg' %}");
+					actionIndex++;
+					return;
+                }
+
+				let betDifference = actionAmount - playerBets[playerIndex];
+				playerBets[playerIndex] = actionAmount;
+				if(betDifference>playerBalances[playerIndex]){
+					betDifference=playerBalances[playerIndex];
+					playerBets[playerIndex] = playerBalances[playerIndex];
+				}
+				playerBalances[playerIndex] -= betDifference;
+				playerBetsElements[playerIndex].textContent = `$${playerBets[playerIndex]}`;
+				playerBalanceElements[playerIndex].textContent = `$${playerBalances[playerIndex]}`;
+				playerActionsElements[playerIndex].textContent = `${formattedAction}`;
+				playerActionsElements[playerIndex].classList.remove("hidden");
+
+                actionIndex++;
+                console.log(actionIndex);
+            }
+            else if(!done){
+				for(let i=0; i<playerCount; i++){
+					pot += playerBets[i];
+					playerBets[i]=0;
+					playerBetsElements[i].textContent = `$${0}`;
+				}
+				potElement.textContent = `Pot: $${pot}`;
+				actionIndex = 0;
+
+				if (currentStreet < streets.length - 1) {
+					currentStreet++;
+					if (currentStreet === 1) {
+                        console.log(communitycards[currentStreet]);
+						setCardImage("community-card-1", getCardImage(communitycards["flop"][0]));
+						setCardImage("community-card-2", getCardImage(communitycards["flop"][1]));
+						setCardImage("community-card-3", getCardImage(communitycards["flop"][2]));
+					} else if (currentStreet === 2) {
+						setCardImage("community-card-4", getCardImage(communitycards["turn"][3]));
+					} else if (currentStreet === 3) {
+						setCardImage("community-card-5", getCardImage(communitycards["river"][4]));
+						done=true;
+					}
+                }
+            }
+            else{
+				// console.log("Game Over");
+                dimPage();
+                showResults(holecards, communitycards[currentStreet]);
+            }
+        }
+
+
+
+
+        function showResults(holecards, communityCards) {
+            const existingResultsDiv = document.getElementById('resultsDiv');
+            if(existingResultsDiv){
+                existingResultsDiv.remove();
+            }
+            const resultsDiv = document.createElement('div');
+            resultsDiv.id = 'resultsDiv';
+            resultsDiv.style.position = 'fixed';
+            resultsDiv.style.top = '50%';
+            resultsDiv.style.left = '50%';
+            resultsDiv.style.transform = 'translate(-50%, -50%)';
+            resultsDiv.style.backgroundColor = '#1f2937';
+            resultsDiv.style.color = 'white';
+            resultsDiv.style.padding = '20px';
+            resultsDiv.style.borderRadius = '10px';
+            resultsDiv.style.textAlign = 'center';
+            resultsDiv.style.fontSize = '1rem';
+            resultsDiv.style.zIndex = '10000';
+            resultsDiv.style.width = '80%';
+            resultsDiv.style.maxWidth = '800px';
+            resultsDiv.style.overflowY = 'auto';
+
+			const chips_exchanged= round.chips_exchanged;
+			const winner = round.winner;
+			let roundBets = prevRoundBalances.map((balance, index) => balance - playerBalances[index]);
+
+            const playersCardsHTML = holecards.map((playerCards, index) => 
+				(playerInGame[index]||playerInRound) ? playerCards.map(card =>
+					`<img src="${getCardImage(card)}" alt="${card}" style="width: 15%; margin: 1px;">`
+				).join('') : ''
+			);
+			const communityCardsHTML = '';
+			if(communityCards){
+				communityCardsHTML = communityCards.map(card =>
+					`<img src="${getCardImage(card)}" alt="${card}" style="width: 6%; margin: 5px;">`
+				).join('');
+			}
+			
+			const getChipsHTML = (playerName) => {
+
+				let ind=playerNames.indexOf(playerName);
+				if(playerName === winner){
+					playerBalances[ind] += roundBets[ind];
+					return `<span style="color: #00ff00;">+${chips_exchanged}</span>`;
+				} 
+				else if(playerInGame[ind]||playerInRound[ind]){
+					if(roundBets[ind]===0){
+						return `<span style="color: #ffcc00;">${roundBets[ind]}</span>`;
+					}
+					else{
+						return `<span style="color: #ff0000;">-${roundBets[ind]}</span>`;
+					}
+				}
+			
+			};
+			window.getChipsHTML = getChipsHTML;
+
+			
+			let winnerHTML = `<strong">${winner}</strong> wins <strong style="color: #00ff00;">${chips_exchanged}</strong> from the pot!`;
+
+			let resultsHTML = `
+				<h2 style="color: white;">Round Complete!</h2>
+				<div style="color: yellow;">${winnerHTML}</div>
+				
+				<h3 style="color: white;">Community Cards</h3>
+				<div>${communityCardsHTML}</div>
+				
+				<h3>Results</h3>
+				<table style="width: 80%; margin-top: 20px; border-collapse: collapse; margin-left: auto; margin-right: auto;">
+					<thead>
+						<tr>
+							<th style="padding: 5px;">Player</th>
+							<th style="padding: 5px; width:45%;">Cards</th>
+							<th style="padding: 5px;">Chips</th>
+						</tr>
+					</thead>
+					<tbody>
+						${playerNames.map((player, index) => `
+							<tr>
+								<td style="padding: 5px;">${player}</td>
+								<td style="padding: 5px;">${playersCardsHTML[index]}</td>
+								<td style="padding: 5px;">${getChipsHTML(player)}</td>
+							</tr>
+						`).join('')}
+					</tbody>
+				</table>
+				<br>
+                <button onclick="closeResults()" style="background-color: #ffcc00; padding: 10px 20px; color: #1f2937; border: none; font-size: 18px; cursor: pointer;">
+                    Done
+                </button>
+			`;
+
+			resultsDiv.innerHTML = resultsHTML;
+            document.body.appendChild(resultsDiv);
+		}
+    }
+
+    function nextRound() {
+        if (currentRoundIndex < roundsData.length - 1){
+            currentRoundIndex++;
+            updateUI();
+        }
+    }
+
+    updateUI();
+</script>
+{% endblock %}

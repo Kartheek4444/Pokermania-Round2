@@ -17,6 +17,6 @@ urlpatterns = [
     path('documentation/', views.documentation, name='documentation'),
     path('test_run/',views.test_run,name="test_run"),
     path('test_replay/<int:match_id>/', views.test_replay, name='test_replay'),
-    path('test_match_results/<int:bot_id>/', views.test_match_results, name='test_run_response2'),
+    path('test_match_results/<int:match_id>/', views.test_match_results, name='test_run_response2'),
     path('admin_panel/', views.admin_panel, name='admin_panel'),
 ]
