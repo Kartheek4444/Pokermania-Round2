@@ -8,7 +8,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError, PermissionDenied, ObjectDoesNotExist
 import re
 from .models import Bot, Match, TestBot, TestMatch
-from .utils import play_match
+from .utils import play_match,play_test_match
 
 User = get_user_model()
 
@@ -183,7 +183,7 @@ def test_run(request):
         all_bots = [new_test_bot] + test_bots
         bot_paths = [bot.file.path for bot in all_bots]
         try:
-            match_result, rounds_data = play_match(bot_paths, all_bots)
+            match_result, rounds_data = play_test_match(bot_paths, all_bots)
         except Exception as e:
             messages.error(request, f"Error executing match: {str(e)}")
             return redirect('/deploy_bot/')
