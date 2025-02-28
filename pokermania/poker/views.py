@@ -105,9 +105,13 @@ def upload_bot(request):
     user = request.user
     bot_name = request.POST.get('bot_name')
     bot_file_path = request.POST.get('bot_file_path')
-    if Bot.objects.filter(user=user).count()>20:
-        messages.error(request, "You can only upload 10 bot.")
+    if Bot.objects.filter(user=user).count()>1:
+        messages.error(request, "You can only upload 1 bot.")
         return redirect('deploy_bot') 
+    
+    if Bot.objects.filter(name=bot_name).exists():
+        messages.error(request, "Bot name already taken!")
+        
 
     try:
         with open(bot_file_path, 'r') as file:
